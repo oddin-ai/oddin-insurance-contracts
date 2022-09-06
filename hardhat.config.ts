@@ -3,6 +3,7 @@ dotenv.config();
 
 import { HardhatUserConfig } from 'hardhat/config';
 import '@nomicfoundation/hardhat-toolbox';
+import '@openzeppelin/hardhat-upgrades';
 
 let config: HardhatUserConfig;
 if (process.env.NODE_ENV !== 'build') {
@@ -22,17 +23,23 @@ if (process.env.NODE_ENV !== 'build') {
                 chainId: 31337,
             },
         },
-        solidity: '0.8.8',
+        solidity: '0.8.16',
         etherscan: {
             apiKey: ETHERSCAN_API_KEY,
         },
-        excludeContracts: ['bexus_fork/']
+        excludeContracts: ['nexus_fork/'], // is it needed? only below is included
+        //     path: {
+        //     sources: "./contracts",
+        //     tests: "./test",
+        //     cache: "./cache",
+        //     artifacts: "./artifacts"
+        //   }
     };
 } else {
     config = {
         defaultNetwork: 'hardhat',
-        solidity: '0.8.8',
-        excludeContracts: ['bexus_fork/']
+        solidity: '0.8.16',
+        excludeContracts: ['nexus_fork/'],
     };
 }
 
