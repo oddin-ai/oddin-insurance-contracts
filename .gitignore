@@ -7,21 +7,8 @@
 node_modules/
 dist/
 
-# Compiled Java class files
-*.class
-
-# Compiled Python bytecode
-*.py[cod]
-
 # Log files
 *.log
-
-# Package files
-*.jar
-
-# Maven
-target/
-dist/
 
 # JetBrains IDE
 .idea/
@@ -39,6 +26,7 @@ Thumbs.db
 *.app
 *.exe
 *.war
+*.o
 
 # Large media files
 *.mp4
@@ -48,3 +36,12 @@ Thumbs.db
 *.mov
 *.wmv
 
+.env
+
+#Hardhat files
+coverage
+coverage.json
+typechain
+typechain-types
+cache
+artifacts
