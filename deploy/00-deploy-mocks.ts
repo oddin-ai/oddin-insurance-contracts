@@ -2,7 +2,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 // const DECIMALS = '18';
-// const INITIAL_PRICE = '2000000000000000000000'; // 2000
+const INITIAL_SUPPLY = '2000000000000000000000'; // 2000
 const deployMocks: DeployFunction = async function (
     hre: HardhatRuntimeEnvironment
 ) {
@@ -13,11 +13,11 @@ const deployMocks: DeployFunction = async function (
     // If we are on a local development network, we need to deploy mocks!
     if (chainId == 31337) {
         log('Local network detected! Deploying mocks...');
-        await deploy('FiatTokenV1', {
-            contract: 'FiatTokenV1',
+        await deploy('FUSDDToken', {
+            contract: 'FUSDDToken',
             from: deployer,
             log: true,
-            args: [],
+            args: [INITIAL_SUPPLY],
         });
         log('Mocks Deployed!');
         log('----------------------------------');
