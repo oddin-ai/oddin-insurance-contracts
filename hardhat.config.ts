@@ -1,9 +1,13 @@
-import * as dotenv from 'dotenv';
-dotenv.config();
-
 import { HardhatUserConfig } from 'hardhat/config';
 import '@nomicfoundation/hardhat-toolbox';
+import '@nomicfoundation/hardhat-network-helpers';
+import '@nomicfoundation/hardhat-chai-matchers';
+import '@nomiclabs/hardhat-ethers';
+import '@typechain/hardhat';
 import '@openzeppelin/hardhat-upgrades';
+import 'hardhat-gas-reporter';
+import 'hardhat-deploy';
+import 'dotenv/config';
 
 let config: HardhatUserConfig;
 if (process.env.NODE_ENV !== 'build') {
@@ -27,7 +31,6 @@ if (process.env.NODE_ENV !== 'build') {
         etherscan: {
             apiKey: ETHERSCAN_API_KEY,
         },
-        excludeContracts: ['nexus_fork/'], // is it needed? only below is included
         //     path: {
         //     sources: "./contracts",
         //     tests: "./test",
@@ -39,7 +42,6 @@ if (process.env.NODE_ENV !== 'build') {
     config = {
         defaultNetwork: 'hardhat',
         solidity: '0.8.16',
-        excludeContracts: ['nexus_fork/'],
     };
 }
 
