@@ -12,7 +12,7 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
 
     IERC20 public immutable feesToken;
     uint256 private constant ACC_TOKEN_PRECISION = 1e18;
-    uint256 private constant feePerShareRate = 1000; // development
+    uint256 private constant feePerShareRate = 1; // development
     uint256 private constant FEES_PERCENTAGE = 50; // development
     uint256 private constant TOTAL_POOL_SIZE = 1e20; // development
 
@@ -30,11 +30,15 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
     function claim() external nonReentrant {
         address user = msg.sender;
 
-        uint256 feeReward = ((((shareInPool[user] / (TOTAL_POOL_SIZE)) *
-            (feePerShareRate)) / (ACC_TOKEN_PRECISION)) * (FEES_PERCENTAGE)) /
-            (100);
+        // uint256 feeReward = ((((shareInPool[user] / (TOTAL_POOL_SIZE)) *
+        //     (feePerShareRate)) / (ACC_TOKEN_PRECISION)) * (FEES_PERCENTAGE)) /
+        //     (100);
+        uint256 feeReward = ((50 *
+            feePerShareRate *
+            FEES_PERCENTAGE *
+            ACC_TOKEN_PRECISION) / 100); //(shareInPool[user] *
         userFeesPerTokenPaid[user] += feeReward;
         fees[user] += feeReward;
-        feesToken.safeTransferFrom(address(this), user, feeReward); // for now fees are in this contract
+        feesToken.safeTransfer(user, feeReward); // for now fees are in this contract
     }
 }
