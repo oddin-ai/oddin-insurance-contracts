@@ -26,7 +26,6 @@ contract InsurancePool is
     mapping(address => uint256) public funds;
     uint256 public minFunding;
     address public NATIVE_STABLE;
-    address private WITHDRAW_MANAGER;
     address private COVER_MANAGER;
     // ------- ^ State variables ^ -------
 
@@ -44,8 +43,7 @@ contract InsurancePool is
     function initialize(
         uint256 _minFund,
         address _nativeStable,
-        address _coverManager,
-        address _withdrawManager
+        address _coverManager
     ) public initializer {
         // add initializers/constructors of parent libraries
         __Ownable_init();
@@ -54,7 +52,6 @@ contract InsurancePool is
         minFunding = _minFund;
         NATIVE_STABLE = _nativeStable; // 0x1111111111111111111111111111111111111111;
         COVER_MANAGER = _coverManager; //0x3111111111111111111111111111111111111113;
-        WITHDRAW_MANAGER = _withdrawManager; // 0x2111111111111111111111111111111111111112;
     }
 
     // ------- ^ Initiation ^ -------
@@ -97,11 +94,11 @@ contract InsurancePool is
         require(_amount > 0, 'Pool: Insufficient withdraw');
         uint256 available = AvailableWithdraw();
         // check there is enough balance for active insurance covers
-        require(available > _amount, 'Pool: Insufficient available funds ');
+        require(available >= _amount, 'Pool: Insufficient available funds ');
         funds[msg.sender] -= _amount;
         IERC20Upgradeable(NATIVE_STABLE).safeTransferFrom(
             address(this),
-            WITHDRAW_MANAGER,
+            msg.sender,
             _amount
         );
         emit PoolFundWithdrawn(msg.sender, _amount);
