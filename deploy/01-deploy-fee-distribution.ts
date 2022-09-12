@@ -35,5 +35,5 @@ const deployFeeDistribution = async (hre: HardhatRuntimeEnvironment) => {
     });
 };
 
-deployFeeDistribution.tags = ['all', 'fee'];
+deployFeeDistribution.tags = ['all', 'fee', 'dist'];
 export default deployFeeDistribution;
