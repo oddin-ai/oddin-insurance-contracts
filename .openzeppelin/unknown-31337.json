@@ -1,0 +1,342 @@
+{
+  "manifestVersion": "3.2",
+  "admin": {
+    "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    "txHash": "0x6331be904a19607727805bcee117c3a2bc3746c59234dd07cda660af9a17b471"
+  },
+  "proxies": [
+    {
+      "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "txHash": "0xc1bbef102f935e99f82c7a667514b52021b74f41f42e82be2a9ad7add0c73135",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+      "txHash": "0x39f1984d23de9cfb9c6a83e9a0097eacc1926ce8917ea8d210b10b7d4c570a24",
+      "kind": "uups"
+    }
+  ],
+  "impls": {
+    "34c9326d0a3a5828ffe51aa17bd11e990ddf93fbd3485e8d9532124e0a6751ad": {
+      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "txHash": "0x8e73f7d43f33a3a126ae67c5c5318018a8f92661d783f126c392f4756d0536c5",
+      "layout": {
+        "storage": [
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_address",
+            "contract": "Ownable",
+            "src": "contracts\\mock-contracts\\FiatTokenV1.sol:299"
+          },
+          {
+            "label": "pauser",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address",
+            "contract": "Pausable",
+            "src": "contracts\\mock-contracts\\FiatTokenV1.sol:375"
+          },
+          {
+            "label": "paused",
+            "offset": 20,
+            "slot": "1",
+            "type": "t_bool",
+            "contract": "Pausable",
+            "src": "contracts\\mock-contracts\\FiatTokenV1.sol:376"
+          },
+          {
+            "label": "blacklister",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_address",
+            "contract": "Blacklistable",
+            "src": "contracts\\mock-contracts\\FiatTokenV1.sol:432"
+          },
+          {
+            "label": "blacklisted",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "Blacklistable",
+            "src": "contracts\\mock-contracts\\FiatTokenV1.sol:433"
+          },
+          {
+            "label": "name",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_string_storage",
+            "contract": "FiatTokenV1",
+            "src": "contracts\\mock-contracts\\FiatTokenV1.sol:509"
+          },
+          {
+            "label": "symbol",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_string_storage",
+            "contract": "FiatTokenV1",
+            "src": "contracts\\mock-contracts\\FiatTokenV1.sol:510"
+          },
+          {
+            "label": "decimals",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_uint8",
+            "contract": "FiatTokenV1",
+            "src": "contracts\\mock-contracts\\FiatTokenV1.sol:511"
+          },
+          {
+            "label": "currency",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_string_storage",
+            "contract": "FiatTokenV1",
+            "src": "contracts\\mock-contracts\\FiatTokenV1.sol:512"
+          },
+          {
+            "label": "masterMinter",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_address",
+            "contract": "FiatTokenV1",
+            "src": "contracts\\mock-contracts\\FiatTokenV1.sol:513"
+          },
+          {
+            "label": "initialized",
+            "offset": 20,
+            "slot": "8",
+            "type": "t_bool",
+            "contract": "FiatTokenV1",
+            "src": "contracts\\mock-contracts\\FiatTokenV1.sol:514"
+          },
+          {
+            "label": "balances",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "FiatTokenV1",
+            "src": "contracts\\mock-contracts\\FiatTokenV1.sol:516"
+          },
+          {
+            "label": "allowed",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+            "contract": "FiatTokenV1",
+            "src": "contracts\\mock-contracts\\FiatTokenV1.sol:517"
+          },
+          {
+            "label": "totalSupply_",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_uint256",
+            "contract": "FiatTokenV1",
+            "src": "contracts\\mock-contracts\\FiatTokenV1.sol:518"
+          },
+          {
+            "label": "minters",
+            "offset": 0,
+            "slot": "12",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "FiatTokenV1",
+            "src": "contracts\\mock-contracts\\FiatTokenV1.sol:519"
+          },
+          {
+            "label": "minterAllowed",
+            "offset": 0,
+            "slot": "13",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "FiatTokenV1",
+            "src": "contracts\\mock-contracts\\FiatTokenV1.sol:520"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_uint256))": {
+            "label": "mapping(address => mapping(address => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "7e58def0ec392ea5f06fa9e534bbaca5ff59cdb19d80a5ba67e16aad9ca0ae14": {
+      "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "txHash": "0x9055beddd704935b73b97ae1c48e247b334abe5594e7b66d78aed4d00ac77561",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "funds",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "InsurancePool",
+            "src": "contracts\\InsurancePool.sol:26"
+          },
+          {
+            "label": "minFunding",
+            "offset": 0,
+            "slot": "252",
+            "type": "t_uint256",
+            "contract": "InsurancePool",
+            "src": "contracts\\InsurancePool.sol:27"
+          },
+          {
+            "label": "NATIVE_STABLE",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "InsurancePool",
+            "src": "contracts\\InsurancePool.sol:28"
+          },
+          {
+            "label": "WITHDRAW_MANAGER",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_address",
+            "contract": "InsurancePool",
+            "src": "contracts\\InsurancePool.sol:29"
+          },
+          {
+            "label": "COVER_MANAGER",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_address",
+            "contract": "InsurancePool",
+            "src": "contracts\\InsurancePool.sol:30"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    }
+  }
+}
