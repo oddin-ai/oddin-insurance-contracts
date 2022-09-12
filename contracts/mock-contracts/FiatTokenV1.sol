@@ -2,7 +2,7 @@
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.0;
+pragma solidity ^0.8.16;
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -174,7 +174,7 @@ library SafeMath {
 
 // File: @openzeppelin/contracts/token/ERC20/IERC20.sol
 
-pragma solidity ^0.6.0;
+pragma solidity ^0.8.16;
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
@@ -265,7 +265,7 @@ interface IERC20 {
 
 // File: contracts/v1/AbstractFiatTokenV1.sol
 
-pragma solidity 0.6.12;
+pragma solidity ^0.8.16;
 
 abstract contract AbstractFiatTokenV1 is IERC20 {
     function _approve(
@@ -283,7 +283,7 @@ abstract contract AbstractFiatTokenV1 is IERC20 {
 
 // File: contracts/v1/Ownable.sol
 
-pragma solidity 0.6.12;
+pragma solidity ^0.8.16;
 
 /**
  * @notice The Ownable contract has an owner address, and provides basic
@@ -352,7 +352,7 @@ contract Ownable {
 
 // File: contracts/v1/Pausable.sol
 
-pragma solidity 0.6.12;
+pragma solidity ^0.8.16;
 
 /**
  * @notice Base contract which allows children to implement an emergency stop
@@ -422,7 +422,7 @@ contract Pausable is Ownable {
 
 // File: contracts/v1/Blacklistable.sol
 
-pragma solidity 0.6.12;
+pragma solidity ^0.8.16;
 
 /**
  * @title Blacklistable Token
@@ -497,7 +497,7 @@ contract Blacklistable is Ownable {
 
 // File: contracts/v1/FiatTokenV1.sol
 
-pragma solidity 0.6.12;
+pragma solidity ^0.8.16;
 
 /**
  * @title FiatToken
