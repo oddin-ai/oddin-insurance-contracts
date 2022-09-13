@@ -45,3 +45,6 @@ typechain
 typechain-types
 cache
 artifacts
+
+# Settings
+.vscode

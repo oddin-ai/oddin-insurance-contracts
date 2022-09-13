@@ -5,29 +5,32 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol';
 
-// import '../interfaces/IInsurancePool.sol';
-// IInsurancePool,
+import '../interfaces/IInsurancePool.sol';
 
 contract InsurancePool is
+    IInsurancePool,
     Initializable,
-    ReentrancyGuardUpgradeable,
     OwnableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    AccessControlUpgradeable,
     UUPSUpgradeable
 {
     // Type declarations:
     using SafeERC20Upgradeable for IERC20Upgradeable;
+    bytes32 public constant COVER_MANAGER = keccak256('COVER_MANAGER');
 
     // ------- ^ Type declarations ^ -------
 
     // State variables:
     mapping(address => uint256) public funds;
     uint256 public minFunding;
+    uint256 private activeCoverage;
+    uint256 private totalFunds;
     address public NATIVE_STABLE;
-    address private WITHDRAW_MANAGER;
-    address private COVER_MANAGER;
     // ------- ^ State variables ^ -------
 
     // Events:
@@ -41,20 +44,16 @@ contract InsurancePool is
     // ------- ^ Modifiers ^ -------
 
     // Initiation:
-    function initialize(
-        uint256 _minFund,
-        address _nativeStable,
-        address _coverManager,
-        address _withdrawManager
-    ) public initializer {
+    function initialize(uint256 _minFund, address _nativeStable)
+        public
+        initializer
+    {
         // add initializers/constructors of parent libraries
         __Ownable_init();
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
         minFunding = _minFund;
         NATIVE_STABLE = _nativeStable; // 0x1111111111111111111111111111111111111111;
-        COVER_MANAGER = _coverManager; //0x3111111111111111111111111111111111111113;
-        WITHDRAW_MANAGER = _withdrawManager; // 0x2111111111111111111111111111111111111112;
     }
 
     // ------- ^ Initiation ^ -------
@@ -89,28 +88,52 @@ contract InsurancePool is
         );
         // after approval add fund
         funds[msg.sender] += _amount;
+        totalFunds += _amount;
         emit PoolFundDeposited(msg.sender, _amount);
     }
 
     function Withdraw(uint256 _amount) external nonReentrant {
         // check amount not 0
         require(_amount > 0, 'Pool: Insufficient withdraw');
-        uint256 available = AvailableWithdraw();
+        uint256 available = totalFunds - activeCoverage;
         // check there is enough balance for active insurance covers
-        require(available > _amount, 'Pool: Insufficient available funds ');
+        require(available >= _amount, 'Pool: Insufficient available funds ');
         funds[msg.sender] -= _amount;
+        totalFunds -= _amount;
         IERC20Upgradeable(NATIVE_STABLE).safeTransferFrom(
             address(this),
-            WITHDRAW_MANAGER,
+            msg.sender,
             _amount
         );
         emit PoolFundWithdrawn(msg.sender, _amount);
     }
 
-    function AvailableWithdraw() public view returns (uint256) {
-        return
-            IERC20Upgradeable(NATIVE_STABLE).balanceOf(address(this)) -
-            IERC20Upgradeable(COVER_MANAGER).totalSupply(); // custom function in the future
+    function ActiveCoverage() external view returns (uint256) {
+        return activeCoverage;
+    }
+
+    function ShareInPool() external view returns (uint256, uint256) {
+        return (funds[msg.sender], totalFunds);
+    }
+
+    function updateActiveCoverage(bool _new, uint256 _amount)
+        external
+        returns (bool)
+    /////* AccessControl */
+    {
+        require(hasRole(COVER_MANAGER, msg.sender), 'Pool: NOT Authorized');
+        require(_amount > 0, 'Pool: Insufficient cover amount');
+        if (!_new) {
+            activeCoverage -= _amount;
+        } else {
+            activeCoverage += _amount;
+        }
+
+        return true;
+    }
+
+    function setCoverManager(address _cm) public onlyOwner {
+        _setupRole(COVER_MANAGER, _cm);
     }
 
     function _authorizeUpgrade(address) internal override onlyOwner {}
