@@ -11,6 +11,8 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable feesToken;
+    IInsurancePool public immutable pool;
+
     uint256 private constant ACC_TOKEN_PRECISION = 1e18;
     uint256 private constant feePerShareRate = 1; // development
     uint256 private constant FEES_PERCENTAGE = 50; // development
@@ -30,10 +32,13 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
     function claim() external nonReentrant {
         address user = msg.sender;
 
+        // here we need to check the user share in the pool
+        uint256 uShareInPool = 50; //pool.shareInPool(msg.sender);
+        require(uShareInPool >= 0, 'Claim: user has no share in pool');
         // uint256 feeReward = ((((shareInPool[user] / (TOTAL_POOL_SIZE)) *
         //     (feePerShareRate)) / (ACC_TOKEN_PRECISION)) * (FEES_PERCENTAGE)) /
         //     (100);
-        uint256 feeReward = ((50 *
+        uint256 feeReward = ((uShareInPool *
             feePerShareRate *
             FEES_PERCENTAGE *
             ACC_TOKEN_PRECISION) / 100); //(shareInPool[user] *
