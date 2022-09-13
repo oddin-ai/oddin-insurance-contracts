@@ -5,7 +5,7 @@ import { FeeDistribution, FUSDDToken } from './../../typechain-types';
 
 !developmentChains.includes(network.name)
     ? describe.skip
-    : describe('FundMe tests', async () => {
+    : describe('FeeDistribution tests', async () => {
           let distributer: FeeDistribution;
           let mockFeesToken: FUSDDToken;
           let deployer: string;
@@ -85,7 +85,7 @@ import { FeeDistribution, FUSDDToken } from './../../typechain-types';
                       distributer
                           .connect(notOwner)
                           .transferOwnership(notOwner.address)
-                  ).to.be.revertedWithoutReason();
+                  ).to.be.revertedWith('Ownable: caller is not the owner');
               });
           });
       });
