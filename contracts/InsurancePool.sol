@@ -9,7 +9,7 @@ import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol'
 import '@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol';
 
-import '../interfaces/IInsurancePool.sol';
+import './interfaces/IInsurancePool.sol';
 
 contract InsurancePool is
     IInsurancePool,

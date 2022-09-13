@@ -6,7 +6,7 @@ import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
-import '../interfaces/IInsurancePool.sol';
+import './interfaces/IInsurancePool.sol';
 
 contract FeeDistribution is Ownable, ReentrancyGuard {
     // Type declarations:
@@ -34,13 +34,13 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
         address _coverMgmtAddress
     ) {
         feesToken = IERC20(_feesToken);
-        pool = IInsurancePool(_feesToken);
+        pool = IInsurancePool(_pool);
         coverMgmtAddress = _coverMgmtAddress;
     }
 
     function claim() external nonReentrant {
         // here we need to check the user share in the pool
-        uint256 uShareInPool = pool.ShareInPool(); //pool.ShareInPool(msg.sender);
+        (uint256 uShareInPool, ) = pool.ShareInPool(); //pool.ShareInPool(msg.sender);
         require(uShareInPool > 0, 'Claim: user has no share in pool');
         // uint256 feeReward = ((((shareInPool[user] / (TOTAL_POOL_SIZE)) *
         //     (feePerShareRate)) / (ACC_TOKEN_PRECISION)) * (FEES_PERCENTAGE)) /
