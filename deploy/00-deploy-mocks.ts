@@ -6,19 +6,50 @@ const INITIAL_SUPPLY = '2000000000000000000000'; // 2000
 const deployMocks: DeployFunction = async function (
     hre: HardhatRuntimeEnvironment
 ) {
-    const { deployments, getNamedAccounts, network } = hre;
+    const { deployments, getNamedAccounts, network, upgrades, ethers } = hre;
     const { deploy, log } = deployments;
-    const { deployer } = await getNamedAccounts();
+    const { deployProxy } = upgrades;
+    const { getContractFactory } = ethers;
+    const { deployer, externalDeployer } = await getNamedAccounts();
     const chainId = network.config.chainId;
     // If we are on a local development network, we need to deploy mocks!
     if (chainId == 31337) {
         log('Local network detected! Deploying mocks...');
         await deploy('FUSDDToken', {
             contract: 'FUSDDToken',
-            from: deployer,
+            from: externalDeployer,
             log: true,
             args: [INITIAL_SUPPLY],
         });
+
+        // *--- FiatTokenV1 ---*
+        // function initialize(
+        //     string memory tokenName,
+        //     string memory tokenSymbol,
+        //     string memory tokenCurrency,
+        //     uint8 tokenDecimals,
+        //     address newMasterMinter,
+        //     address newPauser,
+        //     address newBlacklister,
+        //     address newOwner
+        // )
+        const ft = await deployProxy(
+            await getContractFactory('FiatTokenV1', externalDeployer),
+            [
+                'FUSE USD',
+                'fUSD',
+                'USD',
+                0,
+                externalDeployer,
+                externalDeployer,
+                externalDeployer,
+                externalDeployer,
+            ],
+            {
+                initializer: 'initialize',
+            }
+        );
+
         log('Mocks Deployed!');
         log('----------------------------------');
         log(

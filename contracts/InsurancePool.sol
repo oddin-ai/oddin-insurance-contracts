@@ -9,7 +9,7 @@ import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol'
 import '@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol';
 
-import '../interfaces/IInsurancePool.sol';
+import './interfaces/IInsurancePool.sol';
 
 contract InsurancePool is
     IInsurancePool,
@@ -52,25 +52,24 @@ contract InsurancePool is
         __Ownable_init();
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
+        __AccessControl_init();
         minFunding = _minFund;
-        NATIVE_STABLE = _nativeStable; // 0x1111111111111111111111111111111111111111;
+        NATIVE_STABLE = _nativeStable;
     }
 
     // ------- ^ Initiation ^ -------
 
     // Functions:
     //// constructor
-    //// receive
-    //// fallback
-    //// external
-    //// public
-    //// internal
-    //// private
-    //// view / pure
+    // --
 
+    //// receive
     receive() external payable {}
 
+    //// fallback
     fallback() external payable {}
+
+    //// external
 
     function Deposit(uint256 _amount) external payable {
         // check that amount is above minimal requirement
@@ -112,14 +111,17 @@ contract InsurancePool is
         return activeCoverage;
     }
 
-    function ShareInPool() external view returns (uint256, uint256) {
-        return (funds[msg.sender], totalFunds);
+    function ShareInPool(address _account)
+        external
+        view
+        returns (uint256, uint256)
+    {
+        return (funds[_account], totalFunds);
     }
 
     function updateActiveCoverage(bool _new, uint256 _amount)
         external
         returns (bool)
-    /////* AccessControl */
     {
         require(hasRole(COVER_MANAGER, msg.sender), 'Pool: NOT Authorized');
         require(_amount > 0, 'Pool: Insufficient cover amount');
@@ -132,9 +134,14 @@ contract InsurancePool is
         return true;
     }
 
+    //// public
     function setCoverManager(address _cm) public onlyOwner {
-        _setupRole(COVER_MANAGER, _cm);
+        grantRole(COVER_MANAGER, _cm);
     }
 
+    //// internal
+
     function _authorizeUpgrade(address) internal override onlyOwner {}
+    //// private
+    //// view / pure
 }
