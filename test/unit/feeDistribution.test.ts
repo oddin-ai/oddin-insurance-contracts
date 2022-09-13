@@ -77,4 +77,15 @@ import { FeeDistribution, FUSDDToken } from './../../typechain-types';
                   );
               });
           });
+
+          describe('transferOwnership', async () => {
+              it('Should not update owner using random address', async () => {
+                  const [_owner, notOwner] = await ethers.getSigners();
+                  await expect(
+                      distributer
+                          .connect(notOwner)
+                          .transferOwnership(notOwner.address)
+                  ).to.be.revertedWithoutReason();
+              });
+          });
       });
