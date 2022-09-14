@@ -9,7 +9,7 @@ import '@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol';
 import './interfaces/ICoverManager.sol';
 import './interfaces/IInsurancePool.sol';
-import './types/enums.sol';
+import './types/TCoverManager.sol';
 
 contract CoverManager is
     ICoverManager,
@@ -20,13 +20,9 @@ contract CoverManager is
 {
     // Type declarations:
     using SafeERC20Upgradeable for IERC20Upgradeable;
-    struct CoverDetails {
-        uint256 balance;
-        Periods period;
-        uint256 endDate;
-        uint256 premium;
-    }
+
     // **Periods is imported
+    // **CoverDetails is imported
     // ------- ^ Type declarations ^ -------
 
     // State variables:
@@ -121,13 +117,11 @@ contract CoverManager is
     function getCoverData(address _account)
         external
         view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {}
+        override
+        returns (CoverDetails memory)
+    {
+        return covers[_account];
+    }
 
     //// public
     function CalculatePremium(uint256 _amount, Periods _period)
@@ -136,9 +130,9 @@ contract CoverManager is
         override
         returns (uint256)
     {
-        // get premium from an oracale?
-        uint256 _premium = 1;
-        return _premium;
+        // option A - make internal with params address, amount, period
+        // option B - make oracle address, amount, period
+        return 25;
     }
 
     //// internal

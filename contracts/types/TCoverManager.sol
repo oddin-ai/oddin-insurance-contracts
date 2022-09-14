@@ -8,3 +8,10 @@ enum Periods {
     Ayear,
     Byear
 }
+
+struct CoverDetails {
+    uint256 balance;
+    Periods period;
+    uint256 endDate;
+    uint256 premium;
+}
