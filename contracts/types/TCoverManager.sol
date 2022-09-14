@@ -2,16 +2,14 @@
 pragma solidity ^0.8.16;
 
 enum Periods {
-    Xmonths,
-    Ymonths,
-    Zmonths,
-    Ayear,
-    Byear
+    Xdays,
+    Ydays,
+    Zdays
 }
 
 struct CoverDetails {
     uint256 balance;
-    Periods period;
+    uint16 period;
     uint256 endDate;
     uint256 premium;
 }

