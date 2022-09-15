@@ -1,6 +1,8 @@
 import { network } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { developmentChains, networkConfig } from '../helper-hardhat-config';
+import constants from '../helpers/constants';
+import { Decimals18 } from '../helpers/functions';
 // import { verify } from '../utils/verify';
 
 const deployInsurancePool = async (hre: HardhatRuntimeEnvironment) => {
@@ -24,7 +26,7 @@ const deployInsurancePool = async (hre: HardhatRuntimeEnvironment) => {
     }
 
     // function initialize(uint256 _minFund, address _nativeStable)
-    const args = ['50000', fusd];
+    const args = [Decimals18(constants._1k), fusd];
 
     // TODO: I'm not doing verification for now
     const c = await deployProxy(
