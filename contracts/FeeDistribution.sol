@@ -8,6 +8,8 @@ import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
 import './interfaces/IInsurancePool.sol';
 
+import 'hardhat/console.sol';
+
 contract FeeDistribution is Ownable, ReentrancyGuard {
     // Type declarations:
     using SafeERC20 for IERC20;
@@ -19,7 +21,6 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
     uint256 private constant ACC_TOKEN_PRECISION = 1e18;
     uint256 private constant feePerShareRate = 1; // development
     uint256 private constant FEES_PERCENTAGE = 50; // development
-    uint256 private constant TOTAL_POOL_SIZE = 1e20; // development
 
     // User address => feesPerTokenStored
     mapping(address => uint256) public userFeesPerTokenPaid;
@@ -27,6 +28,8 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
     // mapping(address => uint256) public fees; // why do we need this ????
     // User address => shareInPool to be claimed // development
     mapping(address => uint256) public shareInPool; // development
+
+    // need to check how much of the fees that are stored in this contract we need to distribute!!!
 
     constructor(
         address _feesToken,
@@ -40,21 +43,23 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
 
     function claim() external nonReentrant {
         // here we need to check the user share in the pool
-        (uint256 uShareInPool, ) = pool.ShareInPool(msg.sender);
+        (uint256 uShareInPool, uint256 poolTotal) = pool.ShareInPool(
+            msg.sender
+        );
         require(uShareInPool > 0, 'Claim: user has no share in pool');
         // uint256 feeReward = ((((shareInPool[user] / (TOTAL_POOL_SIZE)) *
         //     (feePerShareRate)) / (ACC_TOKEN_PRECISION)) * (FEES_PERCENTAGE)) /
         //     (100);
-        uint256 feeReward = ((uShareInPool *
+        uint256 coverPremium = feesToken.balanceOf(address(this));
+        uint256 feeReward = ((coverPremium *
+            uShareInPool *
             feePerShareRate *
-            FEES_PERCENTAGE *
-            ACC_TOKEN_PRECISION) / 100); //(shareInPool[user] *
+            FEES_PERCENTAGE) / (poolTotal * 100 * 10));
+        // ACC_TOKEN_PRECISION) / (poolTotal * 100 * 10)); //(shareInPool[user] *
         userFeesPerTokenPaid[msg.sender] += feeReward; // need to check what to do with those two params, as we need to subtract the preiously paid
         //fees[msg.sender] += feeReward;                // and keep track of not over paying
-        require(
-            feesToken.balanceOf(coverMgmtAddress) >= feeReward,
-            'Account: Insufficient balance'
-        );
-        feesToken.safeTransferFrom(coverMgmtAddress, msg.sender, feeReward);
+        console.log('fee to claim is: %s', feeReward);
+        require(coverPremium >= feeReward, 'Account: Insufficient balance');
+        feesToken.safeTransfer(msg.sender, feeReward);
     }
 }
