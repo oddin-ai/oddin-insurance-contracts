@@ -30,7 +30,7 @@ contract InsurancePool is
     uint256 public minFunding;
     uint256 private activeCoverage;
     uint256 private totalFunds;
-    address public NATIVE_STABLE;
+    IERC20Upgradeable public STABLE_COIN;
     // ------- ^ State variables ^ -------
 
     // Events:
@@ -54,14 +54,14 @@ contract InsurancePool is
         __UUPSUpgradeable_init();
         __AccessControl_init();
         minFunding = _minFund;
-        NATIVE_STABLE = _nativeStable;
-        address owner = msg.sender;
-        assembly {
-            sstore(
-                0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103,
-                owner
-            )
-        }
+        STABLE_COIN = IERC20Upgradeable(_nativeStable);
+        // address owner = msg.sender;
+        // assembly {
+        //     sstore(
+        //         0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103,
+        //         owner
+        //     )
+        // }
     }
 
     // ------- ^ Initiation ^ -------
@@ -83,18 +83,14 @@ contract InsurancePool is
         require(_amount >= minFunding, 'Pool: Insufficient fund');
         // check that sender has enough balance
         require(
-            IERC20Upgradeable(NATIVE_STABLE).balanceOf(msg.sender) >= _amount,
+            STABLE_COIN.balanceOf(msg.sender) >= _amount,
             'Account: Insufficient balance'
         );
         // make transfer first
-        IERC20Upgradeable(NATIVE_STABLE).safeTransferFrom(
-            msg.sender,
-            address(this),
-            _amount
-        );
-        // after approval add fund
         funds[msg.sender] += _amount;
         totalFunds += _amount;
+        STABLE_COIN.safeTransferFrom(msg.sender, address(this), _amount);
+        // after approval add fund
         emit PoolFundDeposited(msg.sender, _amount);
     }
 
@@ -106,11 +102,8 @@ contract InsurancePool is
         require(available >= _amount, 'Pool: Insufficient available funds ');
         funds[msg.sender] -= _amount;
         totalFunds -= _amount;
-        IERC20Upgradeable(NATIVE_STABLE).safeTransferFrom(
-            address(this),
-            msg.sender,
-            _amount
-        );
+        STABLE_COIN.safeApprove(msg.sender, _amount);
+        STABLE_COIN.safeTransferFrom(address(this), msg.sender, _amount);
         emit PoolFundWithdrawn(msg.sender, _amount);
     }
 
@@ -126,13 +119,13 @@ contract InsurancePool is
         return (funds[_account], totalFunds);
     }
 
-    function updateActiveCoverage(bool _new, uint256 _amount)
+    function updateActiveCoverage(bool _add, uint256 _amount)
         external
         returns (bool)
     {
         require(hasRole(COVER_MANAGER, msg.sender), 'Pool: NOT Authorized');
         require(_amount > 0, 'Pool: Insufficient cover amount');
-        if (!_new) {
+        if (!_add) {
             activeCoverage -= _amount;
         } else {
             activeCoverage += _amount;
