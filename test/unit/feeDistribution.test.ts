@@ -1,8 +1,8 @@
 import { expect } from 'chai';
 import { deployments, ethers, getNamedAccounts, network } from 'hardhat';
 import { developmentChains } from '../../helper-hardhat-config';
-import constants from '../helpers/constants';
-import { Decimals18 } from '../helpers/functions';
+import constants from '../../helpers/constants';
+import { Decimals18 } from '../../helpers/functions';
 import {
     FeeDistribution,
     FiatTokenV1,
@@ -91,15 +91,15 @@ import {
                   //   );
                   await mockFeesToken
                       .connect(await ethers.getSigner(minter))
-                      .mint(workingAccount.address, Decimals18(constants._500));
+                      .mint(workingAccount.address, Decimals18(constants._1k));
 
                   await FeesContactedToken.approve(
                       insurancePool.address,
-                      Decimals18(constants._500)
+                      Decimals18(constants._1k)
                   );
                   await insurancePool
                       .connect(workingAccount)
-                      .Deposit(Decimals18(constants._500));
+                      .Deposit(Decimals18(constants._1k));
                   const startBalance = await mockFeesToken.balanceOf(
                       workingAccount.address
                   );
