@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat';
 
-export function ValueStringInEthers(value: string) {
+export function Decimals18(value: string) {
     return ethers.utils.parseEther(value).toString();
 }

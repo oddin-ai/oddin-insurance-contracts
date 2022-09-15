@@ -22,15 +22,26 @@ contract CoverManager is
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     // **Periods is imported
+    //     enum Periods {
+    //     Xdays,
+    //     Ydays,
+    //     Zdays
+    // }
     // **CoverDetails is imported
+    //     struct CoverDetails {
+    //     uint256 balance;
+    //     uint16 period;
+    //     uint256 endDate;
+    //     uint256 premium;
+    // }
     // ------- ^ Type declarations ^ -------
 
     // State variables:
     uint16[3] periods; // will be cheaper to use month ranges
     mapping(address => CoverDetails) public covers;
     uint256 public totalCovers;
-    IERC20Upgradeable private NATIVE_STABLE;
-    IInsurancePool private INSURANCE_POOL;
+    IERC20Upgradeable public STABLE_COIN;
+    IInsurancePool public INSURANCE_POOL;
     // ------- ^ State variables ^ -------
 
     // Events:
@@ -54,7 +65,7 @@ contract CoverManager is
         __Ownable_init();
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
-        NATIVE_STABLE = IERC20Upgradeable(_nativeStable);
+        STABLE_COIN = IERC20Upgradeable(_nativeStable);
         INSURANCE_POOL = IInsurancePool(_insurancePool);
         for (uint8 i = 1; i < periods.length; i += 1) {
             require(
@@ -82,17 +93,24 @@ contract CoverManager is
         payable
     {
         require(_amount > 0, 'CoverManager: Insufficient amount');
-        CoverDetails memory cd;
-        if (covers[msg.sender].balance == 0) {
-            cd.period = getPeriod(_periodtype);
-            cd.endDate = block.timestamp + getPeriodDuration(cd.period);
-            cd.premium = CalculatePremium(_amount, cd.period);
-            cd.balance = _amount;
-            covers[msg.sender] = cd;
-        } else {
-            // 1. unregister previous cover
-            // 2. register new cover
+        // check new premium
+        CoverDetails memory _currectCover = covers[msg.sender];
+        uint256 _currentDate = block.timestamp;
+        uint16 _period = getPeriod(_periodtype);
+        uint256 _premium = CalculatePremium(_amount, _period);
+        uint256 _endDate = _currentDate + getPeriodDuration(_period);
+        // check returned
+        if (_currectCover.balance != 0 && _currentDate < _endDate) {
+            // unregister previous cover
+            // if endDate is smaller should revert...
+            uint256 _periodLeft = (_currectCover.endDate - _currentDate) /
+                (1 days);
+
+            _UnregisterCover();
         }
+        // require balance will be higher than new premium after returning the left over premium
+        // require();
+        _RegisterNewCover(CoverDetails(_amount, _period, _endDate, _premium));
         emit CoverRegistered(msg.sender, _amount, _periodtype);
     }
 
@@ -137,11 +155,20 @@ contract CoverManager is
         // option B - make oracle address, amount, period
         require(_period > 0, 'CoverManager: minimum period is 1day');
         require(_period < 366, 'CoverManager: maximum period is 365days');
-        return ((_amount * 25 * _period) / 365000);
+        //  rate: 250 / 10000 = 2.5% , share from year: period / 365
+        return ((_amount * 250 * _period) / 3650000);
     }
 
     //// internal
     function _authorizeUpgrade(address) internal override onlyOwner {}
+
+    function _RegisterNewCover(CoverDetails memory _coverDetails) internal {
+        covers[msg.sender] = _coverDetails;
+    }
+
+    function _UpdateCover() internal {}
+
+    function _UnregisterCover() internal {}
 
     //// private
     //// view / pure

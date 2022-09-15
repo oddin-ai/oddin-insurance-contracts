@@ -6,7 +6,7 @@ import {
     CoverManager,
 } from '../../typechain-types';
 import constants from '../helpers/constants';
-import { ValueStringInEthers } from '../helpers/functions';
+import { Decimals18 } from '../helpers/functions';
 import {} from '../../deploy/00-deploy-mocks';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 // import deployMock_FiatTokenV1 from '../../deploy/00-deploy-mock-FiatTokenV1';
@@ -49,45 +49,55 @@ describe('Insurance Pool Test', function () {
             // MockCoverManager = await ethers.getContract("CoverManager")
             await Mock_fUSD.connect(externalDeployer).configureMinter(
                 minter,
-                constants._1m
+                Decimals18(constants._1m)
             );
-            await Mock_fUSD.connect(minter).mint(user_a, constants._500k);
-            await Mock_fUSD.connect(minter).mint(user_b, constants._50k);
+            await Mock_fUSD.connect(minter).mint(
+                user_a,
+                Decimals18(constants._500k)
+            );
+            await Mock_fUSD.connect(minter).mint(
+                user_b,
+                Decimals18(constants._50k)
+            );
         });
         it('Deposit - sufficient amount & sufficient account balance & sufficient allowance', async function () {
             await Mock_fUSD.connect(user_a).approve(
                 Mock_InsurancePool.address,
-                constants._100k
+                Decimals18(constants._100k)
             );
             expect(
                 await Mock_InsurancePool.connect(user_a).Deposit(
-                    constants._100k
+                    Decimals18(constants._100k)
                 )
             )
                 .to.emit(Mock_InsurancePool, 'PoolFundDeposited')
-                .withArgs(user_a, constants._100k);
+                .withArgs(user_a, Decimals18(constants._100k));
             expect((await Mock_fUSD.balanceOf(user_a)).toString()).to.equal(
-                '400000'
+                Decimals18('400000')
             );
         });
 
         it('Deposit - sufficient amount & sufficient account balance & insufficient allowance', async function () {
             await Mock_fUSD.connect(user_a).approve(
                 Mock_InsurancePool.address,
-                constants._10k
+                Decimals18(constants._10k)
             );
             await expect(
-                Mock_InsurancePool.connect(user_a).Deposit(constants._100k)
+                Mock_InsurancePool.connect(user_a).Deposit(
+                    Decimals18(constants._100k)
+                )
             ).to.be.reverted;
         });
 
         it('Deposit - insufficient amount & sufficient account balance & sufficient allowance', async function () {
             await Mock_fUSD.connect(user_a).approve(
                 Mock_InsurancePool.address,
-                constants._10k
+                Decimals18(constants._10k)
             );
             await expect(
-                Mock_InsurancePool.connect(user_a).Deposit(constants._10k)
+                Mock_InsurancePool.connect(user_a).Deposit(
+                    Decimals18(constants._10k)
+                )
             ).to.be.revertedWith('Pool: Insufficient fund');
         });
 
@@ -104,20 +114,24 @@ describe('Insurance Pool Test', function () {
         it('Deposit - sufficient amount & insufficient account balance', async function () {
             await Mock_fUSD.connect(user_b).approve(
                 Mock_InsurancePool.address,
-                constants._50k
+                Decimals18(constants._50k)
             );
             await expect(
-                Mock_InsurancePool.connect(user_b).Deposit(constants._100k)
+                Mock_InsurancePool.connect(user_b).Deposit(
+                    Decimals18(constants._100k)
+                )
             ).to.be.revertedWith('Account: Insufficient balance');
         });
 
         it('Deposit - insufficient amount & insufficient account balance', async function () {
             await Mock_fUSD.connect(user_b).approve(
                 Mock_InsurancePool.address,
-                constants._10k
+                Decimals18(constants._10k)
             );
             await expect(
-                Mock_InsurancePool.connect(user_b).Deposit(constants._10k)
+                Mock_InsurancePool.connect(user_b).Deposit(
+                    Decimals18(constants._10k)
+                )
             ).to.be.revertedWith('Pool: Insufficient fund');
         });
     });
@@ -126,11 +140,11 @@ describe('Insurance Pool Test', function () {
         it('Withdraw - sufficient amount & sufficient account balance & sufficient allowance', async function () {
             expect(
                 await Mock_InsurancePool.connect(user_a).Deposit(
-                    constants._100k
+                    Decimals18(constants._100k)
                 )
             )
                 .to.emit(Mock_InsurancePool, 'PoolFundDeposited')
-                .withArgs(user_a, constants._100k);
+                .withArgs(user_a, Decimals18(constants._100k));
             expect((await Mock_fUSD.balanceOf(user_a)).toString()).to.equal(
                 '400000'
             );
