@@ -26,14 +26,23 @@ const deployMocks: DeployFunction = async function (
         });
 
         // *--- FiatTokenV1 ---*
-
+        // function initialize(
+        //     string memory tokenName,
+        //     string memory tokenSymbol,
+        //     string memory tokenCurrency,
+        //     uint8 tokenDecimals,
+        //     address newMasterMinter,
+        //     address newPauser,
+        //     address newBlacklister,
+        //     address newOwner
+        // )
         const c = await deployProxy(
             await getContractFactory(DEPLOY_CONTRACT, externalDeployer),
             [
                 'FUSE USD',
                 'fUSD',
                 'USD',
-                0,
+                18,
                 externalDeployer,
                 externalDeployer,
                 externalDeployer,
@@ -45,61 +54,7 @@ const deployMocks: DeployFunction = async function (
         );
         await c.deployed();
         const artifact = await deployments.getExtendedArtifact(DEPLOY_CONTRACT); // artifacts.readArtifactSync('FiatTokenV1'),
-
         deployments.save(DEPLOY_CONTRACT, { ...artifact, address: c.address });
-
-        // function initialize(
-        //     string memory tokenName,
-        //     string memory tokenSymbol,
-        //     string memory tokenCurrency,
-        //     uint8 tokenDecimals,
-        //     address newMasterMinter,
-        //     address newPauser,
-        //     address newBlacklister,
-        //     address newOwner
-        // )
-        // await deployProxy(
-        //     await getContractFactory('FiatTokenV1', externalDeployer),
-        //     [
-        //         'FUSE USD',
-        //         'fUSD',
-        //         'USD',
-        //         0,
-        //         externalDeployer,
-        //         externalDeployer,
-        //         externalDeployer,
-        //         externalDeployer,
-        //     ],
-        //     {
-        //         initializer: 'initialize',
-        //     }
-        // );
-
-        // await deploy('FiatTokenV1', {
-        //     contract: 'FiatTokenV1',
-        //     from: externalDeployer,
-        //     args: [],
-        //     proxy: {
-        //         proxyContract: 'ERC1967Proxy',
-        //         proxyArgs: ['{implementation}', '{data}'],
-        //         execute: {
-        //             init: {
-        //                 methodName: 'initialize',
-        //                 args: [
-        //                     'FUSE USD',
-        //                     'fUSD',
-        //                     'USD',
-        //                     0,
-        //                     externalDeployer,
-        //                     externalDeployer,
-        //                     externalDeployer,
-        //                     externalDeployer,
-        //                 ],
-        //             },
-        //         },
-        //     },
-        //     log: true,
-        // });
 
         log('Mocks Deployed!');
         log('----------------------------------');
