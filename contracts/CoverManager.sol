@@ -93,24 +93,30 @@ contract CoverManager is
         payable
     {
         require(_amount > 0, 'CoverManager: Insufficient amount');
-        // check new premium
-        CoverDetails memory _currectCover = covers[msg.sender];
         uint256 _currentDate = block.timestamp;
+        // new cover details
         uint16 _period = getPeriod(_periodtype);
         uint256 _premium = CalculatePremium(_amount, _period);
         uint256 _endDate = _currentDate + getPeriodDuration(_period);
-        // check returned
-        if (_currectCover.balance != 0 && _currentDate < _endDate) {
-            // unregister previous cover
-            // if endDate is smaller should revert...
+        uint256 _addAmount = _amount; // amount to add to pool
+        // check current cover details
+        CoverDetails memory _currectCover = covers[msg.sender];
+        if (
+            _currectCover.balance != 0 && _currentDate < _currectCover.endDate
+        ) {
+            // check exparetion
             uint256 _periodLeft = (_currectCover.endDate - _currentDate) /
                 (1 days);
-
-            _UnregisterCover();
+            if (_periodLeft > 0) {
+                _addAmount -= _currectCover.balance;
+                // _UnregisterCover(_periodLeft, _currectCover.premium);
+            }
         }
+        // !!! not to send back tokens, but to transfer the difference and update accordingly
         // require balance will be higher than new premium after returning the left over premium
         // require();
         _RegisterNewCover(CoverDetails(_amount, _period, _endDate, _premium));
+        INSURANCE_POOL.updateActiveCoverage(true, _addAmount);
         emit CoverRegistered(msg.sender, _amount, _periodtype);
     }
 
@@ -168,7 +174,9 @@ contract CoverManager is
 
     function _UpdateCover() internal {}
 
-    function _UnregisterCover() internal {}
+    function _UnregisterCover(uint256 _periodLeft, uint256 _CurrentPremium)
+        internal
+    {}
 
     //// private
     //// view / pure
