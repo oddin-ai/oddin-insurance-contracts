@@ -12,7 +12,7 @@ import { FeeDistribution, FUSDDToken } from './../../typechain-types';
 
           beforeEach(async () => {
               deployer = (await getNamedAccounts()).deployer;
-              await deployments.fixture(['dist']);
+              await deployments.fixture(['all']);
               distributer = await ethers.getContract(
                   'FeeDistribution',
                   deployer

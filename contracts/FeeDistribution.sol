@@ -40,7 +40,7 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
 
     function claim() external nonReentrant {
         // here we need to check the user share in the pool
-        (uint256 uShareInPool, ) = pool.ShareInPool(); //pool.ShareInPool(msg.sender);
+        (uint256 uShareInPool, ) = pool.ShareInPool(msg.sender);
         require(uShareInPool > 0, 'Claim: user has no share in pool');
         // uint256 feeReward = ((((shareInPool[user] / (TOTAL_POOL_SIZE)) *
         //     (feePerShareRate)) / (ACC_TOKEN_PRECISION)) * (FEES_PERCENTAGE)) /
