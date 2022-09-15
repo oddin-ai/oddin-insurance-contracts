@@ -9,30 +9,28 @@ const deployCoverManager = async (hre: HardhatRuntimeEnvironment) => {
     const { getContractFactory } = ethers;
     const { deployer, externalDeployer } = await getNamedAccounts();
     const chainId = network.config.chainId;
-
+    const DEPLOY_CONTRACT = 'CoverManager';
     let fusd;
+    let insurancepool;
+    let periods = [30, 90, 365];
+
     if (
         network.name !== undefined &&
         developmentChains.includes(network.name)
     ) {
-        const stableCoin = await deployments.get('FiatTokenV1');
-        if (stableCoin == null || stableCoin == undefined) {
-            console.log('fUSD not in deployments after using deployProxy...');
-            fusd = (await ethers.getContract('FiatTokenV1', externalDeployer))
-                .address;
-        } else {
-            fusd = stableCoin.address;
-        }
+        fusd = (await deployments.get('FiatTokenV1')).address;
+        insurancepool = (await deployments.get('InsurancePool')).address;
     } else {
         if (chainId) {
             fusd = null; // this is for now, need to see how to do on-chain testing
+            insurancepool = null;
         }
     }
 
-    const args = [fusd];
+    const args = [fusd, insurancepool, periods];
     // TODO: I'm not doing verification for now
     const c = await deployProxy(
-        await getContractFactory('CoverManager', deployer),
+        await getContractFactory(DEPLOY_CONTRACT, deployer),
         args,
         {
             kind: 'uups',
@@ -42,6 +40,13 @@ const deployCoverManager = async (hre: HardhatRuntimeEnvironment) => {
             // useDeployedImplementation: undefined,
         }
     );
+    await c.deployed();
+    const artifact = await deployments.getExtendedArtifact(DEPLOY_CONTRACT); // artifacts.readArtifactSync('FiatTokenV1'),
+
+    deployments.save(DEPLOY_CONTRACT, {
+        ...artifact,
+        address: c.address,
+    });
 };
 
 deployCoverManager.tags = ['all', 'cover', 'manager'];

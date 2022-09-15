@@ -26,7 +26,7 @@ contract CoverManager is
     // ------- ^ Type declarations ^ -------
 
     // State variables:
-    uint32[5] periodDuration; // will be cheaper to use month ranges
+    uint16[3] periods; // will be cheaper to use month ranges
     mapping(address => CoverDetails) public covers;
     uint256 public totalCovers;
     IERC20Upgradeable private NATIVE_STABLE;
@@ -48,7 +48,7 @@ contract CoverManager is
     function initialize(
         address _nativeStable,
         address _insurancePool,
-        uint32[5] memory _periodDuration
+        uint16[3] memory _periods
     ) public initializer {
         // add initializers/constructors of parent libraries
         __Ownable_init();
@@ -56,13 +56,13 @@ contract CoverManager is
         __UUPSUpgradeable_init();
         NATIVE_STABLE = IERC20Upgradeable(_nativeStable);
         INSURANCE_POOL = IInsurancePool(_insurancePool);
-        for (uint8 i; i < 4; i += 1) {
+        for (uint8 i = 1; i < periods.length; i += 1) {
             require(
-                _periodDuration[i] < _periodDuration[i + 1],
-                'Period Durations are not sequential'
+                _periods[i - 1] < _periods[i],
+                'Periods are not sequential scaling up'
             );
         }
-        periodDuration = _periodDuration;
+        periods = _periods;
     }
 
     // ------- ^ Initiation ^ -------
@@ -77,20 +77,23 @@ contract CoverManager is
 
     //// external
 
-    function RegisterCover(uint256 _amount, Periods _period) external payable {
+    function RegisterCover(uint256 _amount, Periods _periodtype)
+        external
+        payable
+    {
         require(_amount > 0, 'CoverManager: Insufficient amount');
+        CoverDetails memory cd;
         if (covers[msg.sender].balance == 0) {
-            CoverDetails memory cd;
-            cd.period = _period;
-            cd.endDate = block.timestamp + getPeriodDuration(_period);
-            cd.premium = CalculatePremium(_amount, _period);
+            cd.period = getPeriod(_periodtype);
+            cd.endDate = block.timestamp + getPeriodDuration(cd.period);
+            cd.premium = CalculatePremium(_amount, cd.period);
             cd.balance = _amount;
             covers[msg.sender] = cd;
         } else {
             // 1. unregister previous cover
             // 2. register new cover
         }
-        emit CoverRegistered(msg.sender, _amount, _period);
+        emit CoverRegistered(msg.sender, _amount, _periodtype);
     }
 
     function ActiveCoverage() external view returns (uint256) {
@@ -124,7 +127,7 @@ contract CoverManager is
     }
 
     //// public
-    function CalculatePremium(uint256 _amount, Periods _period)
+    function CalculatePremium(uint256 _amount, uint16 _period)
         public
         pure
         override
@@ -132,7 +135,9 @@ contract CoverManager is
     {
         // option A - make internal with params address, amount, period
         // option B - make oracle address, amount, period
-        return 25;
+        require(_period > 0, 'CoverManager: minimum period is 1day');
+        require(_period < 366, 'CoverManager: maximum period is 365days');
+        return ((_amount * 25 * _period) / 365000);
     }
 
     //// internal
@@ -142,11 +147,16 @@ contract CoverManager is
     //// view / pure
 
     /// @notice Get the duration of a pre-defined period in seconds
-    function getPeriodDuration(Periods _period) public view returns (uint256) {
+    function getPeriod(Periods _periodtype) public view returns (uint16) {
         require(
-            uint8(_period) < periodDuration.length,
+            uint8(_periodtype) < periods.length,
             'Invalid period, duration unavailable'
         );
-        return periodDuration[uint8(_period)];
+        return periods[uint8(_periodtype)];
+    }
+
+    /// @notice Get the duration of a pre-defined period in seconds
+    function getPeriodDuration(uint16 _period) internal pure returns (uint32) {
+        return _period * (1 days);
     }
 }

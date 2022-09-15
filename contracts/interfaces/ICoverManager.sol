@@ -5,7 +5,7 @@ import '../types/TCoverManager.sol';
 interface ICoverManager {
     function RegisterCover(uint256 _amount, Periods _period) external payable;
 
-    function CalculatePremium(uint256 _amount, Periods _period)
+    function CalculatePremium(uint256 _amount, uint16 _period)
         external
         view
         returns (uint256);
