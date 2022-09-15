@@ -27,21 +27,41 @@ if (process.env.NODE_ENV !== 'build') {
                 chainId: 31337,
             },
         },
-        solidity: '0.8.16',
+        solidity: {
+            compilers: [{ version: '0.6.12' }, { version: '0.8.16' }],
+        },
         etherscan: {
             apiKey: ETHERSCAN_API_KEY,
         },
-        //     path: {
-        //     sources: "./contracts",
-        //     tests: "./test",
-        //     cache: "./cache",
-        //     artifacts: "./artifacts"
-        //   }
+        namedAccounts: {
+            deployer: {
+                default: 0, // here this will by default take the first account as deployer
+                1: 0, // similarly on mainnet it will take the first account as deployer. Note though that depending on how hardhat network are configured, the account 0 on one network can be different than on another
+            },
+            externalDeployer: {
+                default: 1,
+                1: 1,
+            },
+            externalAdmin: {
+                default: 2,
+                1: 2,
+            },
+            user_a: {
+                default: 3,
+                1: 3,
+            },
+            user_b: {
+                default: 4,
+                1: 4,
+            },
+        },
     };
 } else {
     config = {
         defaultNetwork: 'hardhat',
-        solidity: '0.8.16',
+        solidity: {
+            compilers: [{ version: '0.6.12' }, { version: '0.8.16' }],
+        },
     };
 }
 

@@ -1,13 +1,19 @@
-export interface networkConfigItem {}
+export interface networkConfigItem {
+    name: string;
+    blockConfirmations: number;
+}
 
 export interface networkConfigInfo {
-    [key: string]: networkConfigItem;
+    [key: number]: networkConfigItem;
 }
 
 export const networkConfig: networkConfigInfo = {
-    localhost: {},
-    hardhat: {},
-    kovan: {},
+    31337: { name: 'localhost', blockConfirmations: 1 },
+    // hardhat: {},
+    122: {
+        name: 'fuse',
+        blockConfirmations: 6,
+    },
 };
 
 export const developmentChains = ['hardhat', 'localhost'];
