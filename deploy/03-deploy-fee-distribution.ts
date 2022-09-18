@@ -29,7 +29,7 @@ const deployFeeDistribution = async (hre: HardhatRuntimeEnvironment) => {
         }
     }
 
-    const args = [fusdd, iPool, cManager];
+    const args = [fusdd, iPool, cManager, 1];
     // TODO: I'm not doing verification for now
     await deploy('FeeDistribution', {
         from: deployer,

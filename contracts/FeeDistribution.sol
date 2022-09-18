@@ -17,9 +17,9 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
     IERC20 public immutable feesToken;
     IInsurancePool public immutable pool;
     address public immutable coverMgmtAddress;
+    uint256 public tokenPerSecRate;
 
     uint256 private constant ACC_TOKEN_PRECISION = 1e18;
-    uint256 private constant feePerShareRate = 1; // development
     uint256 private constant FEES_PERCENTAGE = 50; // development
 
     // User address => feesPerTokenStored
@@ -30,17 +30,31 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
     mapping(address => uint256) public shareInPool; // development
 
     event CoverVerified(address _member);
+    event RewardRateUpdated(uint256 oldRate, uint256 newRate);
 
     // need to check how much of the fees that are stored in this contract we need to distribute!!!
 
     constructor(
         address _feesToken,
         address _pool,
-        address _coverMgmtAddress
+        address _coverMgmtAddress,
+        uint256 _tokenPerSecRate
     ) {
         feesToken = IERC20(_feesToken);
         pool = IInsurancePool(_pool);
         coverMgmtAddress = _coverMgmtAddress;
+        tokenPerSecRate = _tokenPerSecRate;
+    }
+
+    /// @notice Sets the distribution reward rate. This will also update the poolInfo.
+    /// @param _tokenPerSecRate The number of tokens to distribute per second per share in insurance pool
+    function setRewardRate(uint256 _tokenPerSecRate) external onlyOwner {
+        // updatePool();
+
+        uint256 oldRate = tokenPerSecRate;
+        tokenPerSecRate = _tokenPerSecRate;
+
+        emit RewardRateUpdated(oldRate, _tokenPerSecRate);
     }
 
     function claim() external nonReentrant {
@@ -50,12 +64,12 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
         );
         require(uShareInPool > 0, 'Claim: user has no share in pool');
         // uint256 feeReward = ((((shareInPool[user] / (TOTAL_POOL_SIZE)) *
-        //     (feePerShareRate)) / (ACC_TOKEN_PRECISION)) * (FEES_PERCENTAGE)) /
+        //     (tokenPerSecRate)) / (ACC_TOKEN_PRECISION)) * (FEES_PERCENTAGE)) /
         //     (100);
         uint256 coverPremium = feesToken.balanceOf(address(this));
         uint256 feeReward = ((coverPremium *
             uShareInPool *
-            feePerShareRate *
+            tokenPerSecRate *
             FEES_PERCENTAGE) / (poolTotal * 100 * 10));
         // ACC_TOKEN_PRECISION) / (poolTotal * 100 * 10)); //(shareInPool[user] *
         userFeesPerTokenPaid[msg.sender] += feeReward; // need to check what to do with those two params, as we need to subtract the preiously paid

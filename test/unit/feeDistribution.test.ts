@@ -76,6 +76,20 @@ import {
               });
           });
 
+          describe('setRewardRate', async () => {
+              it('Only owner can update rewardrate', async () => {
+                  await distributer.setRewardRate(2);
+                  expect(await distributer.tokenPerSecRate()).to.be.eq('2');
+              });
+
+              it('Should not update rewardrate using random address', async () => {
+                  const [_owner, notOwner] = await ethers.getSigners();
+                  await expect(
+                      distributer.connect(notOwner).setRewardRate(2)
+                  ).to.be.revertedWith('Ownable: caller is not the owner');
+              });
+          });
+
           describe('claim', async () => {
               const accounts = await ethers.getSigners();
               const workingAccount = accounts[6];
