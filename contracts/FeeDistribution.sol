@@ -18,7 +18,6 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
     IInsurancePool public immutable pool;
     address public immutable coverMgmtAddress;
     uint256 public tokenPerSecRate;
-    uint256 public lastFeeDistributionTimestamp;
 
     uint256 private constant ACC_TOKEN_PRECISION = 1e18;
     uint256 private constant FEES_PERCENTAGE = 50; // development
@@ -29,6 +28,13 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
     // mapping(address => uint256) public fees; // why do we need this ????
     // User address => shareInPool to be claimed // development
     mapping(address => uint256) public shareInPool; // development
+
+    struct FeeInfo {
+        uint256 accTokenPerShare;
+        uint256 lastFeeDistributionTimestamp;
+    }
+    /// @notice Info of the poolInfo.
+    FeeInfo public sFeeInfo;
 
     event CoverVerified(address _member);
     event RewardRateUpdated(uint256 oldRate, uint256 newRate);
@@ -45,12 +51,17 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
         pool = IInsurancePool(_pool);
         coverMgmtAddress = _coverMgmtAddress;
         tokenPerSecRate = _tokenPerSecRate;
-        lastFeeDistributionTimestamp = block.timestamp;
+        sFeeInfo = FeeInfo({
+            accTokenPerShare: 0,
+            lastFeeDistributionTimestamp: block.timestamp
+        });
     }
 
     /// @notice Sets the distribution reward rate. This will also update the feesInfo.
     /// @param _tokenPerSecRate The number of tokens to distribute per second per share in insurance pool
     function setRewardRate(uint256 _tokenPerSecRate) external onlyOwner {
+        // uint256 coverPremium = feesToken.balanceOf(address(this));
+        // updateFeesInfo(coverPremium);
         updateFeesInfo();
 
         uint256 oldRate = tokenPerSecRate;
@@ -60,14 +71,20 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
     }
 
     /// @notice Update reward variables of the.
-    function updateFeesInfo() internal {
-        uint256 feesInfoTs = lastFeeDistributionTimestamp;
+    function updateFeesInfo() internal returns (FeeInfo memory feesInfo) {
+        feesInfo = sFeeInfo;
         // Do I need to check if there is something left in balace???
-        if (block.timestamp > feesInfoTs) {
-            uint256 timeElapsed = block.timestamp - feesInfoTs; // from here we will calculate how much to allocate for each share
+        if (block.timestamp > feesInfo.lastFeeDistributionTimestamp) {
+            uint256 timeElapsed = block.timestamp -
+                feesInfo.lastFeeDistributionTimestamp; // from here we will calculate how much to allocate for each share
+            console.log('time Elapsed: %s', timeElapsed);
+            uint256 tokenReward = timeElapsed * tokenPerSecRate;
+            feesInfo.accTokenPerShare += (tokenReward * ACC_TOKEN_PRECISION);
+            console.log('accTokenPerShare: %s', feesInfo.accTokenPerShare);
         }
 
-        lastFeeDistributionTimestamp = block.timestamp;
+        feesInfo.lastFeeDistributionTimestamp = block.timestamp;
+        sFeeInfo = feesInfo;
     }
 
     function claim() external nonReentrant {
@@ -75,19 +92,19 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
         (uint256 uShareInPool, uint256 poolTotal) = pool.ShareInPool(
             msg.sender
         );
-        require(uShareInPool > 0, 'Claim: user has no share in pool');
+        console.log('user share in pool: %s', uShareInPool);
+        console.log('Total in pool: %s', poolTotal);
 
-        updateFeesInfo();
+        require(uShareInPool > 0, 'Claim: user has no share in pool');
+        uint256 coverPremium = feesToken.balanceOf(address(this));
+        FeeInfo memory feesInfo = updateFeesInfo();
 
         // uint256 feeReward = ((((shareInPool[user] / (TOTAL_POOL_SIZE)) *
         //     (tokenPerSecRate)) / (ACC_TOKEN_PRECISION)) * (FEES_PERCENTAGE)) /
         //     (100);
-        uint256 coverPremium = feesToken.balanceOf(address(this));
-        uint256 feeReward = ((coverPremium *
-            uShareInPool *
-            tokenPerSecRate *
-            FEES_PERCENTAGE) / (poolTotal * 100 * 10));
-        // ACC_TOKEN_PRECISION) / (poolTotal * 100 * 10)); //(shareInPool[user] *
+        uint256 feeReward = ((FEES_PERCENTAGE *
+            feesInfo.accTokenPerShare *
+            uShareInPool) / (ACC_TOKEN_PRECISION * poolTotal * 100)); // still need to substruct the previusly paid reward
         userFeesPerTokenPaid[msg.sender] += feeReward; // need to check what to do with those two params, as we need to subtract the preiously paid
         //fees[msg.sender] += feeReward;                // and keep track of not over paying
         console.log('fee to claim is: %s', feeReward);
