@@ -53,6 +53,7 @@ contract InsurancePool is
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
         __AccessControl_init();
+        _grantRole(DEFAULT_ADMIN_ROLE, owner());
         minFunding = _minFund;
         STABLE_COIN = IERC20Upgradeable(_nativeStable);
         // address owner = msg.sender;
