@@ -18,6 +18,7 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
     IInsurancePool public immutable pool;
     address public immutable coverMgmtAddress;
     uint256 public tokenPerSecRate;
+    uint256 public lastFeeDistributionTimestamp;
 
     uint256 private constant ACC_TOKEN_PRECISION = 1e18;
     uint256 private constant FEES_PERCENTAGE = 50; // development
@@ -44,17 +45,29 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
         pool = IInsurancePool(_pool);
         coverMgmtAddress = _coverMgmtAddress;
         tokenPerSecRate = _tokenPerSecRate;
+        lastFeeDistributionTimestamp = block.timestamp;
     }
 
-    /// @notice Sets the distribution reward rate. This will also update the poolInfo.
+    /// @notice Sets the distribution reward rate. This will also update the feesInfo.
     /// @param _tokenPerSecRate The number of tokens to distribute per second per share in insurance pool
     function setRewardRate(uint256 _tokenPerSecRate) external onlyOwner {
-        // updatePool();
+        updateFeesInfo();
 
         uint256 oldRate = tokenPerSecRate;
         tokenPerSecRate = _tokenPerSecRate;
 
         emit RewardRateUpdated(oldRate, _tokenPerSecRate);
+    }
+
+    /// @notice Update reward variables of the.
+    function updateFeesInfo() internal {
+        uint256 feesInfoTs = lastFeeDistributionTimestamp;
+        // Do I need to check if there is something left in balace???
+        if (block.timestamp > feesInfoTs) {
+            uint256 timeElapsed = block.timestamp - feesInfoTs; // from here we will calculate how much to allocate for each share
+        }
+
+        lastFeeDistributionTimestamp = block.timestamp;
     }
 
     function claim() external nonReentrant {
@@ -63,6 +76,9 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
             msg.sender
         );
         require(uShareInPool > 0, 'Claim: user has no share in pool');
+
+        updateFeesInfo();
+
         // uint256 feeReward = ((((shareInPool[user] / (TOTAL_POOL_SIZE)) *
         //     (tokenPerSecRate)) / (ACC_TOKEN_PRECISION)) * (FEES_PERCENTAGE)) /
         //     (100);
