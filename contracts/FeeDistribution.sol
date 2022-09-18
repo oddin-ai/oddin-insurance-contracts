@@ -29,6 +29,8 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
     // User address => shareInPool to be claimed // development
     mapping(address => uint256) public shareInPool; // development
 
+    event CoverVerified(address _member);
+
     // need to check how much of the fees that are stored in this contract we need to distribute!!!
 
     constructor(
@@ -61,5 +63,11 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
         console.log('fee to claim is: %s', feeReward);
         require(coverPremium >= feeReward, 'Account: Insufficient balance');
         feesToken.safeTransfer(msg.sender, feeReward);
+    }
+
+    function VerifyCover() external payable {
+        // _RegisterNewCover(CoverDetails(_amount, _period, _endDate, _premium));
+        // pool.updateActiveCoverage(true, _addAmount);
+        emit CoverVerified(msg.sender);
     }
 }

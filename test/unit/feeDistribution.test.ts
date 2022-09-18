@@ -77,31 +77,32 @@ import {
           });
 
           describe('claim', async () => {
+              const accounts = await ethers.getSigners();
+              const workingAccount = accounts[6];
+
+              const FeesContactedToken = await mockFeesToken.connect(
+                  workingAccount
+              );
+              //   const FeesManagerContactedToken = await mockFeesToken.connect(
+              //       manager.address
+              //   );
+              await mockFeesToken
+                  .connect(await ethers.getSigner(minter))
+                  .mint(workingAccount.address, Decimals18(constants._1k));
+
+              await FeesContactedToken.approve(
+                  insurancePool.address,
+                  Decimals18(constants._1k)
+              );
+              await insurancePool
+                  .connect(workingAccount)
+                  .Deposit(Decimals18(constants._1k));
+              const startBalance = await mockFeesToken.balanceOf(
+                  workingAccount.address
+              );
               it('Address claims hers fees', async () => {
-                  const accounts = await ethers.getSigners();
-                  const workingAccount = accounts[6];
                   const feesConnectedContract = await distributer.connect(
                       workingAccount
-                  );
-                  const FeesContactedToken = await mockFeesToken.connect(
-                      workingAccount
-                  );
-                  //   const FeesManagerContactedToken = await mockFeesToken.connect(
-                  //       manager.address
-                  //   );
-                  await mockFeesToken
-                      .connect(await ethers.getSigner(minter))
-                      .mint(workingAccount.address, Decimals18(constants._1k));
-
-                  await FeesContactedToken.approve(
-                      insurancePool.address,
-                      Decimals18(constants._1k)
-                  );
-                  await insurancePool
-                      .connect(workingAccount)
-                      .Deposit(Decimals18(constants._1k));
-                  const startBalance = await mockFeesToken.balanceOf(
-                      workingAccount.address
                   );
                   expect(startBalance).to.be.eq(0);
                   //   await FeesManagerContactedToken.approve(
@@ -123,6 +124,39 @@ import {
                   expect(endBalance).to.be.eq(
                       ethers.utils.parseUnits('25', 'ether')
                   );
+              });
+              it('Address has no share in pool', async () => {
+                  const noShareAccount = accounts[7];
+                  const feesConnectedContract = await distributer.connect(
+                      noShareAccount
+                  );
+                  const startBalance = await mockFeesToken.balanceOf(
+                      noShareAccount.address
+                  );
+                  expect(startBalance).to.be.eq(0);
+                  const txResponse = await feesConnectedContract.claim();
+                  await txResponse.wait(1);
+                  const endBalance = await mockFeesToken.balanceOf(
+                      noShareAccount.address
+                  );
+                  expect(endBalance).to.be.eq(
+                      ethers.utils.parseUnits('0', 'ether')
+                  );
+              });
+          });
+
+          describe('verifyCover', async () => {
+              it('Emits event CoverVerified', async () => {
+                  const accounts = await ethers.getSigners();
+                  const workingAccount = accounts[6];
+
+                  const feesConnectedContract = await distributer.connect(
+                      workingAccount
+                  );
+
+                  await expect(feesConnectedContract.VerifyCover())
+                      .to.emit(feesConnectedContract, 'CoverVerified')
+                      .withArgs(workingAccount.address);
               });
           });
 
