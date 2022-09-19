@@ -7,14 +7,17 @@ import '@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 // import './types/TQuoteManager.sol';
 import './interfaces/IQuoteManager.sol';
+import 'hardhat/console.sol';
 
 contract QuoteManager is
     IQuoteManager,
     Initializable,
-    ReentrancyGuardUpgradeable,
     OwnableUpgradeable,
+    AccessControlUpgradeable,
+    ReentrancyGuardUpgradeable,
     UUPSUpgradeable
 {
     // Type declarations:
@@ -27,6 +30,8 @@ contract QuoteManager is
     uint16 public validDuration; // seconds ( uint16 max 18hours, uint8 max 4.267 mins)
 
     mapping(address => mapping(uint256 => Quote)) public quotes;
+
+    bytes32 public constant COVER_VERIFIER = keccak256('COVER_VERIFIER');
 
     // ------- ^ State variables ^ -------
 
@@ -49,6 +54,8 @@ contract QuoteManager is
         __Ownable_init();
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
+        __AccessControl_init();
+        _grantRole(DEFAULT_ADMIN_ROLE, owner());
 
         for (uint8 i = 1; i < periods.length; i += 1) {
             require(
@@ -117,20 +124,26 @@ contract QuoteManager is
         return quotes[_account][_qid];
     }
 
-    //// public
     function Verify(address _account, uint256 _qid) external {
+        require(
+            hasRole(COVER_VERIFIER, msg.sender),
+            'QuoteManager: NOT Authorized to verify'
+        );
         Quote memory _q = quotes[_account][_qid];
         require(
             _q.expiry > 0,
             'QuoteManager: No Quotes with given address/QID'
         );
-        require(
-            _q.verified != true,
-            'QuoteManager: address/QID already verified'
-        );
+        require(_q.verified != true, 'QuoteManager: Quote already verified');
         _q.verified = true;
         quotes[_account][_qid] = _q;
         emit QuoteVerified(_account, _qid);
+    }
+
+    //// public
+
+    function setCoverVerifier(address _cv) public onlyOwner {
+        grantRole(COVER_VERIFIER, _cv);
     }
 
     //// internal

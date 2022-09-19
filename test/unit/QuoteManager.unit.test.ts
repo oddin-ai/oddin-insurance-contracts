@@ -6,13 +6,19 @@ import {
     InsurancePool,
     CoverManager,
     QuoteManager,
+    FeeDistribution,
 } from '../../typechain-types';
 import constants from '../../helpers/constants';
 import { Decimals18 } from '../../helpers/functions';
 import { increase } from '@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time';
 import initials from '../../helpers/deploy-initials';
 import { BigNumber } from 'ethers';
-import { time } from '@nomicfoundation/hardhat-network-helpers';
+import {
+    impersonateAccount,
+    setBalance,
+    stopImpersonatingAccount,
+    time,
+} from '@nomicfoundation/hardhat-network-helpers';
 
 describe('Quote Manager Unit Test', function () {
     // set-up
@@ -28,6 +34,7 @@ describe('Quote Manager Unit Test', function () {
     let user_b_Singer: SignerWithAddress;
     let minter_Singer: SignerWithAddress;
     let Mock_QuoteManager: QuoteManager;
+    let Mock_FeeDistribution: FeeDistribution;
     before(async () => {
         await network.provider.send('hardhat_reset');
         const namedAccounts = await getNamedAccounts();
@@ -45,14 +52,14 @@ describe('Quote Manager Unit Test', function () {
         minter = minter_Singer.address;
 
         accounts = (await ethers.getSigners()).slice(5);
-        await deployments.fixture(['quote']);
+        await deployments.fixture(['all']);
         Mock_QuoteManager = await ethers.getContract('QuoteManager');
     });
-    describe('Function GetQuote(uint256 _amount, Periods _periodtype)', function () {
+    describe('Function GetQuote(uint256 _amount, Periods _periodtype) external payable returns (uint256, uint256)', function () {
         let Mock_QuoteManager_USER_A: QuoteManager;
 
         before(async () => {
-            await deployments.fixture(['quote']);
+            await deployments.fixture(['all']);
             Mock_QuoteManager_USER_A = Mock_QuoteManager.connect(user_a_Singer);
         });
 
@@ -106,7 +113,7 @@ describe('Quote Manager Unit Test', function () {
         });
     });
 
-    describe('Function IsQuoteActive(address _account, uint256 _qid)', function () {
+    describe('Function IsQuoteActive(address _account, uint256 _qid) external view returns (bool, CoverDetails memory)', function () {
         let Mock_QuoteManager_USER_B: QuoteManager;
         let Mock_QuoteManager_USER_A: QuoteManager;
         let Mock_QuoteManager_USER_C: QuoteManager;
@@ -160,7 +167,7 @@ describe('Quote Manager Unit Test', function () {
         });
     });
 
-    describe('Function GetQuoteData', function () {
+    describe('Function GetQuoteData external view returns (Quote memory)', function () {
         let Mock_QuoteManager_USER_C: QuoteManager;
         before(async () => {
             await deployments.fixture(['quote']);
@@ -208,6 +215,107 @@ describe('Quote Manager Unit Test', function () {
         });
     });
 
+    describe('Function Verify(address _account, uint256 _qid) external', function () {
+        let Mock_QuoteManager_USER_A: QuoteManager;
+        let Mock_QuoteManager_FEEDIST: QuoteManager;
+        let Mock_QuoteManager_FAKE_FEEDIST: QuoteManager;
+        before(async () => {
+            await deployments.fixture(['all']);
+            Mock_FeeDistribution = await ethers.getContract(
+                'FeeDistribution',
+                deployer
+            );
+
+            await impersonateAccount(Mock_FeeDistribution.address);
+            await setBalance(
+                Mock_FeeDistribution.address,
+                BigNumber.from(Decimals18(constants._1k)).toHexString()
+            );
+            // console.log(Mock_FeeDistribution.address);
+            // console.log(
+            //     (await ethers.getSigner(Mock_FeeDistribution.address)).address
+            // );
+            Mock_QuoteManager_USER_A = Mock_QuoteManager.connect(user_a_Singer);
+            Mock_QuoteManager_FEEDIST = Mock_QuoteManager.connect(
+                await ethers.getSigner(Mock_FeeDistribution.address)
+            );
+            Mock_QuoteManager_FAKE_FEEDIST =
+                Mock_QuoteManager.connect(minter_Singer);
+            await Mock_QuoteManager_USER_A.GetQuote(
+                Decimals18(constants._20k),
+                1
+            );
+        });
+        after(async () => {
+            await stopImpersonatingAccount(Mock_FeeDistribution.address);
+        });
+        it('Verify - V COVER_VERIFIER & V account & V qid', async function () {
+            expect(await Mock_QuoteManager_FEEDIST.Verify(user_a, 123))
+                .to.emit(Mock_QuoteManager, 'QuoteVerified')
+                .withArgs(user_a, 123);
+        });
+        it('Verify - V COVER_VERIFIER & X account & V qid', async function () {
+            await expect(
+                Mock_QuoteManager_FEEDIST.Verify(externalDeployer, 123)
+            ).to.revertedWith('QuoteManager: No Quotes with given address/QID');
+        });
+        it('Verify - V COVER_VERIFIER & V account & X qid', async function () {
+            await expect(
+                Mock_QuoteManager_FEEDIST.Verify(user_a, 321)
+            ).to.revertedWith('QuoteManager: No Quotes with given address/QID');
+        });
+        it('Verify - V COVER_VERIFIER & X account & X qid', async function () {
+            await expect(
+                Mock_QuoteManager_FEEDIST.Verify(externalDeployer, 321)
+            ).to.revertedWith('QuoteManager: No Quotes with given address/QID');
+        });
+        it('Verify - X COVER_VERIFIER & V account & V qid', async function () {
+            await expect(
+                Mock_QuoteManager_FAKE_FEEDIST.Verify(user_a, 123)
+            ).to.revertedWith('QuoteManager: NOT Authorized to verify');
+        });
+        it('Verify - X COVER_VERIFIER & X account & V qid', async function () {
+            await expect(
+                Mock_QuoteManager_FAKE_FEEDIST.Verify(externalDeployer, 123)
+            ).to.revertedWith('QuoteManager: NOT Authorized to verify');
+        });
+        it('Verify - X COVER_VERIFIER & V account & X qid', async function () {
+            await expect(
+                Mock_QuoteManager_FAKE_FEEDIST.Verify(user_a, 321)
+            ).to.revertedWith('QuoteManager: NOT Authorized to verify');
+        });
+        it('Verify - X COVER_VERIFIER & X account & X qid', async function () {
+            await expect(
+                Mock_QuoteManager_FAKE_FEEDIST.Verify(externalDeployer, 321)
+            ).to.revertedWith('QuoteManager: NOT Authorized to verify');
+        });
+    });
+
+    describe('Function setCoverVerifier(address _cv) public onlyOwner', function () {
+        let Mock_QuoteManager_USER_A: QuoteManager;
+        let Mock_QuoteManager_OWNER: QuoteManager;
+        before(async () => {
+            await deployments.fixture(['all']);
+            // console.log(Mock_FeeDistribution.address);
+            // console.log(
+            //     (await ethers.getSigner(Mock_FeeDistribution.address)).address
+            // );
+            Mock_QuoteManager_USER_A = Mock_QuoteManager.connect(user_a_Singer);
+            Mock_QuoteManager_OWNER =
+                Mock_QuoteManager.connect(deployer_Singer);
+        });
+        // it('setCoverVerifier - V owner', async function () {
+        //     Mock_QuoteManager_OWNER.setCoverVerifier(user_b)
+        //     await expect(
+        //         Mock_QuoteManager.hasRole(,user_b)
+        //     ).to.revertedWith('QuoteManager: NOT Authorized to verify');
+        // });
+        // it('setCoverVerifier - X owner', async function () {
+        //     expect(
+        //         Mock_QuoteManager_USER_A.Verify(externalDeployer, 321)
+        //     ).to.revertedWith('QuoteManager: NOT Authorized to verify');
+        // });
+    });
     // describe('Function calculatePremium', function () {
     //     before(async () => {
     //         await deployments.fixture(['quote']);
