@@ -21,7 +21,7 @@ const deployFeeDistribution = async (hre: HardhatRuntimeEnvironment) => {
         fusdd = stableCoin.address;
         const pool = await deployments.get('InsurancePool');
         iPool = pool.address;
-        const manager = await deployments.get('CoverManager');
+        const manager = await deployments.get('QuoteManager');
         cManager = manager.address;
     } else {
         if (chainId) {

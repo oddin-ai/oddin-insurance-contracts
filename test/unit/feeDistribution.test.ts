@@ -10,7 +10,7 @@ import {
     FeeDistribution,
     FiatTokenV1,
     InsurancePool,
-    CoverManager,
+    QuoteManager,
 } from './../../typechain-types';
 
 !developmentChains.includes(network.name)
@@ -19,7 +19,7 @@ import {
           let distributer: FeeDistribution;
           let mockFeesToken: FiatTokenV1;
           let insurancePool: InsurancePool;
-          let manager: CoverManager;
+          let manager: QuoteManager;
           let deployer: string;
           let minter: string;
           let externalDeployer: string;
@@ -38,19 +38,12 @@ import {
                   'InsurancePool',
                   deployer
               );
-              manager = await ethers.getContract('CoverManager', deployer);
+              manager = await ethers.getContract('QuoteManager', deployer);
 
-              //   mockFeesToken = await ethers.getContract('FUSDDToken', deployer);
-              //   await mockFeesToken.transfer(
-              //       distributer.address,
-              //       ethers.utils.parseUnits('1000', 'ether'),
-              //       { from: deployer }
-              //   );
               mockFeesToken = await ethers.getContract(
                   'FiatTokenV1',
                   externalDeployer
               );
-              // MockCoverManager = await ethers.getContract("CoverManager")
               const contactedToken = await mockFeesToken.connect(
                   await ethers.getSigner(externalDeployer)
               );
@@ -186,7 +179,26 @@ import {
                       workingAccount
                   );
 
-                  await expect(feesConnectedContract.VerifyCover())
+                  await mockFeesToken
+                      .connect(await ethers.getSigner(minter))
+                      .mint(workingAccount.address, Decimals18(constants._1k));
+
+                  const Mock_QuoteManager_USER_A =
+                      manager.connect(workingAccount);
+                  const quoteA = await Mock_QuoteManager_USER_A.GetQuote(
+                      Decimals18(constants._2k),
+                      0
+                  );
+                  await mockFeesToken
+                      .connect(workingAccount)
+                      .approve(distributer.address, Decimals18(constants._10k));
+
+                  await expect(
+                      feesConnectedContract.VerifyCover(
+                          123,
+                          ethers.utils.parseUnits('10', 'ether')
+                      )
+                  )
                       .to.emit(feesConnectedContract, 'CoverVerified')
                       .withArgs(workingAccount.address);
               });

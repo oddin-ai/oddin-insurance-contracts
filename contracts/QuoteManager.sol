@@ -32,6 +32,7 @@ contract QuoteManager is
 
     // Events:
     event oddinNewQuote(address, uint256, uint256);
+    event QuoteVerified(address, uint256);
 
     // ------- ^ Events ^ -------
 
@@ -94,6 +95,7 @@ contract QuoteManager is
             _q.cover.balance > 0,
             'QuoteManager: No Quotes with given address/QID'
         );
+
         bool _valid;
         if (_q.expiry > block.timestamp) {
             _valid = true;
@@ -116,6 +118,20 @@ contract QuoteManager is
     }
 
     //// public
+    function Verify(address _account, uint256 _qid) external {
+        Quote memory _q = quotes[_account][_qid];
+        require(
+            _q.expiry > 0,
+            'QuoteManager: No Quotes with given address/QID'
+        );
+        require(
+            _q.verified != true,
+            'QuoteManager: address/QID already verified'
+        );
+        _q.verified = true;
+        quotes[_account][_qid] = _q;
+        emit QuoteVerified(_account, _qid);
+    }
 
     //// internal
     function saveQuote(
@@ -132,7 +148,8 @@ contract QuoteManager is
         // check current cover details
         quotes[msg.sender][_qid] = Quote(
             CoverDetails(_amount, _period, _endDate, _premium),
-            _expiry
+            _expiry,
+            false
         );
     }
 

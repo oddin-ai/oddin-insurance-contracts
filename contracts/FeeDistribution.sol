@@ -7,6 +7,7 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
 import './interfaces/IInsurancePool.sol';
+import './interfaces/IQuoteManager.sol';
 
 import 'hardhat/console.sol';
 
@@ -16,7 +17,7 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
 
     IERC20 public immutable feesToken;
     IInsurancePool public immutable pool;
-    address public immutable coverMgmtAddress;
+    IQuoteManager public immutable quoteManager;
     uint256 public tokenPerSecRate;
 
     uint256 private constant ACC_TOKEN_PRECISION = 1e18;
@@ -44,12 +45,12 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
     constructor(
         address _feesToken,
         address _pool,
-        address _coverMgmtAddress,
+        address _quoteManagerAddress,
         uint256 _tokenPerSecRate
     ) {
         feesToken = IERC20(_feesToken);
         pool = IInsurancePool(_pool);
-        coverMgmtAddress = _coverMgmtAddress;
+        quoteManager = IQuoteManager(_quoteManagerAddress);
         tokenPerSecRate = _tokenPerSecRate;
         sFeeInfo = FeeInfo({
             accTokenPerShare: 0,
@@ -111,9 +112,34 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
         feesToken.safeTransfer(msg.sender, userAmount);
     }
 
-    function VerifyCover() external payable {
-        // _RegisterNewCover(CoverDetails(_amount, _period, _endDate, _premium));
-        // pool.updateActiveCoverage(true, _addAmount);
-        emit CoverVerified(msg.sender);
+    function VerifyCover(uint256 _qid, uint256 _premiumAmount)
+        external
+        payable
+        nonReentrant
+    {
+        console.log('before checking active quote with %s', _qid);
+        try quoteManager.IsQuoteActive(msg.sender, _qid) returns (
+            bool active,
+            CoverDetails memory cd
+        ) {
+            // TODO: also require the quate to be not verified!!!
+            require(active, 'VerifyCover: Quate is not active!');
+            uint256 premium = cd.premium;
+            require(
+                _premiumAmount >= premium,
+                'VerifyCover: Fee amount not sufficiant!'
+            );
+            console.log('premium to pay: %s', premium);
+            feesToken.safeTransferFrom(msg.sender, address(this), premium);
+            console.log('we passed safeTransferFrom with %s', _qid);
+            quoteManager.Verify(msg.sender, _qid);
+            emit CoverVerified(msg.sender);
+        } catch Error(string memory err) {
+            console.log('Error catch');
+        }
+        // (bool active, CoverDetails memory cd) = quoteManager.IsQuoteActive(
+        //     msg.sender,
+        //     _qid
+        // );
     }
 }
