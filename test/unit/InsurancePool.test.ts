@@ -43,7 +43,6 @@ describe('Insurance Pool Test', function () {
         user_a = user_a_Singer.address;
         user_b = user_b_Singer.address;
         minter = minter_Singer.address;
-
         accounts = await ethers.getSigners();
         await deployments.fixture(['all']);
     });
@@ -192,10 +191,14 @@ describe('Insurance Pool Test', function () {
             await Mock_InsurancePool.connect(user_b_Singer).Deposit(
                 Decimals18(constants._50k)
             );
-            await Mock_InsurancePool.setCoverManager(Mock_CoverManager.address);
+            // this is bulls**t for testing!
+            await Mock_InsurancePool.connect(deployer_Singer).setCoverManager(
+                deployer
+            );
             await Mock_InsurancePool.connect(
-                await ethers.getSigner(Mock_CoverManager.address)
+                deployer_Singer
             ).updateActiveCoverage(true, Decimals18(constants._20k));
+            // End bulls**t
             // verify starting point
             expect(await Mock_InsurancePool.ActiveCoverage()).to.eq(
                 Decimals18(constants._20k)
@@ -207,29 +210,18 @@ describe('Insurance Pool Test', function () {
                 Decimals18(constants._5k)
             );
         });
-        it('Withdraw - available amount & sufficient active cover balance', async function () {
-            expect(
-                await Mock_InsurancePool.connect(user_a_Singer).Withdraw(
+        it('Withdraw - available amount & sufficient4 active cover balance', async function () {
+            await expect(
+                Mock_InsurancePool.connect(user_a_Singer).Withdraw(
                     Decimals18(constants._50k)
                 )
             )
                 .to.emit(Mock_InsurancePool, 'PoolFundWithdrawn')
-                .withArgs(user_a, Decimals18(constants._100k));
-            expect((await Mock_fUSD.balanceOf(user_a)).toString()).to.equal(
-                '400000'
-            );
-        });
-        it('Withdraw - sufficient amount & sufficient account balance & sufficient allowance', async function () {
+                .withArgs(user_a, Decimals18(constants._50k));
+
             expect(
-                await Mock_InsurancePool.connect(user_a_Singer).Deposit(
-                    Decimals18(constants._100k)
-                )
-            )
-                .to.emit(Mock_InsurancePool, 'PoolFundDeposited')
-                .withArgs(user_a, Decimals18(constants._100k));
-            expect((await Mock_fUSD.balanceOf(user_a)).toString()).to.equal(
-                '400000'
-            );
+                await Mock_fUSD.balanceOf(Mock_InsurancePool.address)
+            ).to.be.eq(Decimals18(constants._100k));
         });
     });
 

@@ -87,6 +87,16 @@ contract CoverManager is
     fallback() external payable {}
 
     //// external
+    // function getQuote(uint256 _amount, Periods _periodtype)
+    //     external
+    //     payable
+    //     returns (uint256)
+    // {
+    //     // send request to backend
+    //     uint256 _premium = CalculatePremium(_amount, getPeriod(_periodtype));
+    //     saveQuote(msg.sender, _premium);
+    //     return _premium;
+    // }
 
     function RegisterCover(uint256 _amount, Periods _periodtype)
         external

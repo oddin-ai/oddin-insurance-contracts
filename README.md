@@ -8,7 +8,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/oddin-ai/oddin-contracts">
+  <a href="https://github.com/oddin-ai/oddin-insurance-contracts">
     <img src="images/logo.png" alt="Logo" width="260" height="60">
   </a>
 
@@ -16,13 +16,13 @@
   <p align="center">
     Oddin insurance smart contract , for supported protocols on EVM compaible networks
     <br />
-    <a href="https://github.com/oddin-ai/oddin-contracts"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/oddin-ai/oddin-insurance-contracts"><strong>Explore the docs »</strong></a>
     <br />
     <br />
     ·
-    <a href="https://github.com/oddin-ai/oddin-contracts/issues">Report Bug</a>
+    <a href="https://github.com/oddin-ai/oddin-insurance-contracts/issues">Report Bug</a>
     ·
-    <a href="https://github.com/oddin-ai/oddin-contracts/issues">Request Feature</a>
+    <a href="https://github.com/oddin-ai/oddin-insurance-contracts/issues">Request Feature</a>
   </p>
 </div>
 
@@ -61,7 +61,7 @@ This is an example of how to list things you need to use the software and how to
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/oddin-ai/oddin-contracts.git
+   git clone https://github.com/oddin-ai/oddin-insurance-contracts.git
    ```
 2. Install NPM packages
    ```sh
@@ -73,27 +73,31 @@ This is an example of how to list things you need to use the software and how to
 <!-- ROADMAP -->
 ## Roadmap
 
-- [x] Oracle contract
-- [ ] Upgradable Oracle contract
-- [ ] TBD
+- [x] Insurance pool contract
+- [x] Upgradable Insurance pool contract
+- [x] Cover management contract
+- [ ] Claim tokens
+- [ ] Get quatation for cover
+- [ ] Test Covarage
+- [ ] Gas optimization
 
-See the [open issues](https://github.com/oddin-ai/oddin-contracts/issues) for a full list of proposed features (and known issues).
+See the [open issues](https://github.com/oddin-ai/oddin-insurance-contracts/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/oddin-ai/oddin-contracts.svg?style=for-the-badge
-[contributors-url]: https://github.com/oddin-ai/oddin-contracts/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/oddin-ai/oddin-contracts.svg?style=for-the-badge
-[forks-url]: https://github.com/oddin-ai/oddin-contracts/network/members
-[stars-shield]: https://img.shields.io/github/stars/oddin-ai/oddin-contracts.svg?style=for-the-badge
-[stars-url]: https://github.com/oddin-ai/oddin-contracts/stargazers
-[issues-shield]: https://img.shields.io/github/issues/oddin-ai/oddin-contracts.svg?style=for-the-badge
-[issues-url]: https://github.com/oddin-ai/oddin-contracts/issues
-[license-shield]: https://img.shields.io/github/license/oddin-ai/oddin-contracts.svg?style=for-the-badge
-[license-url]: https://github.com/oddin-ai/oddin-contracts/blob/master/LICENSE.txt
+[contributors-shield]: https://img.shields.io/github/contributors/oddin-ai/oddin-insurance-contracts.svg?style=for-the-badge
+[contributors-url]: https://github.com/oddin-ai/oddin-insurance-contracts/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/oddin-ai/oddin-insurance-contracts.svg?style=for-the-badge
+[forks-url]: https://github.com/oddin-ai/oddin-insurance-contracts/network/members
+[stars-shield]: https://img.shields.io/github/stars/oddin-ai/oddin-insurance-contracts.svg?style=for-the-badge
+[stars-url]: https://github.com/oddin-ai/oddin-insurance-contracts/stargazers
+[issues-shield]: https://img.shields.io/github/issues/oddin-ai/oddin-insurance-contracts.svg?style=for-the-badge
+[issues-url]: https://github.com/oddin-ai/oddin-insurance-contracts/issues
+[license-shield]: https://img.shields.io/github/license/oddin-ai/oddin-insurance-contracts.svg?style=for-the-badge
+[license-url]: https://github.com/oddin-ai/oddin-insurance-contracts/blob/master/LICENSE.txt
 
 [Typescript]: https://img.shields.io/badge/typescript-3178C6?style=for-the-badge&logo=typescript&logoColor=white
 [Typescript-url]: https://www.typescriptlang.org/
