@@ -1,14 +1,13 @@
 import { expect } from 'chai';
-import { network, deployments, ethers, getNamedAccounts } from 'hardhat';
+import { deployments, ethers, getNamedAccounts } from 'hardhat';
 import {
     FiatTokenV1,
     InsurancePool,
-    CoverManager,
+    QuoteManager,
 } from '../../typechain-types';
 import constants from '../../helpers/constants';
 import { Decimals18 } from '../../helpers/functions';
 import {} from '../../deploy/00-deploy-mocks';
-import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 // import deployMock_FiatTokenV1 from '../../deploy/00-deploy-mock-FiatTokenV1';
 
@@ -27,7 +26,7 @@ describe('Insurance Pool Test', function () {
     let minter_Singer: SignerWithAddress;
     let Mock_fUSD: FiatTokenV1;
     let Mock_InsurancePool: InsurancePool;
-    let Mock_CoverManager: CoverManager;
+    let Mock_CoverManager: QuoteManager;
     before(async () => {
         // await network.provider.send('hardhat_reset');
         const namedAccounts = await getNamedAccounts();
@@ -56,7 +55,6 @@ describe('Insurance Pool Test', function () {
                 deployer
             );
             Mock_fUSD = await ethers.getContract('FiatTokenV1', deployer);
-            // MockCoverManager = await ethers.getContract("CoverManager")
             await Mock_fUSD.connect(externalDeployer_Singer).configureMinter(
                 minter,
                 Decimals18(constants._1m)

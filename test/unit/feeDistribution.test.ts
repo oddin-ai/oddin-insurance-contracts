@@ -185,19 +185,27 @@ import {
 
                   const Mock_QuoteManager_USER_A =
                       manager.connect(workingAccount);
-                  const quoteA = await Mock_QuoteManager_USER_A.GetQuote(
+                  const txResponse = await Mock_QuoteManager_USER_A.GetQuote(
                       Decimals18(constants._2k),
                       0
                   );
+                  const txReceipt = await txResponse.wait();
+                  const premiumLog = txReceipt.events?.filter((x) => {
+                      return x.event == 'oddinNewQuote';
+                  });
+                  const premiumAmount = premiumLog
+                      ? premiumLog.length > 0
+                          ? premiumLog[0].args
+                              ? premiumLog[0].args[2]
+                              : 0
+                          : 0
+                      : 0;
                   await mockFeesToken
                       .connect(workingAccount)
                       .approve(distributer.address, Decimals18(constants._10k));
 
                   await expect(
-                      feesConnectedContract.VerifyCover(
-                          123,
-                          ethers.utils.parseUnits('10', 'ether')
-                      )
+                      feesConnectedContract.VerifyCover(123, premiumAmount)
                   )
                       .to.emit(feesConnectedContract, 'CoverVerified')
                       .withArgs(workingAccount.address);
