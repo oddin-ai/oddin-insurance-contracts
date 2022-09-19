@@ -53,6 +53,7 @@ contract InsurancePool is
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
         __AccessControl_init();
+        _grantRole(DEFAULT_ADMIN_ROLE, owner());
         minFunding = _minFund;
         STABLE_COIN = IERC20Upgradeable(_nativeStable);
         // address owner = msg.sender;
@@ -102,8 +103,8 @@ contract InsurancePool is
         require(available >= _amount, 'Pool: Insufficient available funds ');
         funds[msg.sender] -= _amount;
         totalFunds -= _amount;
-        STABLE_COIN.safeApprove(msg.sender, _amount);
-        STABLE_COIN.safeTransferFrom(address(this), msg.sender, _amount);
+        // STABLE_COIN.safeIncreaseAllowance(msg.sender, _amount);
+        STABLE_COIN.safeTransfer(msg.sender, _amount);
         emit PoolFundWithdrawn(msg.sender, _amount);
     }
 

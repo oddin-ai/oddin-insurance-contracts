@@ -1,4 +1,4 @@
-import { network } from 'hardhat';
+import { network, ethers } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { developmentChains, networkConfig } from '../helper-hardhat-config';
 // import { verify } from '../utils/verify';
@@ -12,6 +12,7 @@ const deployFeeDistribution = async (hre: HardhatRuntimeEnvironment) => {
     let fusdd;
     let iPool;
     let cManager;
+    const speed = ethers.utils.parseUnits('16000', 'gwei');
     if (
         network.name !== undefined &&
         developmentChains.includes(network.name)
@@ -29,7 +30,7 @@ const deployFeeDistribution = async (hre: HardhatRuntimeEnvironment) => {
         }
     }
 
-    const args = [fusdd, iPool, cManager];
+    const args = [fusdd, iPool, cManager, speed];
     // TODO: I'm not doing verification for now
     await deploy('FeeDistribution', {
         from: deployer,
