@@ -78,7 +78,8 @@ This is an example of how to list things you need to use the software and how to
 - [x] Cover management contract
 - [ ] Claim tokens
 - [ ] Get quatation for cover
-- [ ] TBD
+- [ ] Test Covarage
+- [ ] Gas optimization
 
 See the [open issues](https://github.com/oddin-ai/oddin-insurance-contracts/issues) for a full list of proposed features (and known issues).
 

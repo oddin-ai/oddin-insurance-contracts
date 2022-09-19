@@ -102,14 +102,16 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
         // uint256 feeReward = ((((shareInPool[user] / (TOTAL_POOL_SIZE)) *
         //     (tokenPerSecRate)) / (ACC_TOKEN_PRECISION)) * (FEES_PERCENTAGE)) /
         //     (100);
+        uint256 uRewardDept = userFeesPerTokenPaid[msg.sender];
         uint256 feeReward = ((FEES_PERCENTAGE *
             feesInfo.accTokenPerShare *
             uShareInPool) / (ACC_TOKEN_PRECISION * poolTotal * 100)); // still need to substruct the previusly paid reward
-        userFeesPerTokenPaid[msg.sender] += feeReward; // need to check what to do with those two params, as we need to subtract the preiously paid
+        userFeesPerTokenPaid[msg.sender] = feeReward; // need to check what to do with those two params, as we need to subtract the preiously paid
         //fees[msg.sender] += feeReward;                // and keep track of not over paying
-        console.log('fee to claim is: %s', feeReward);
-        require(coverPremium >= feeReward, 'Account: Insufficient balance');
-        feesToken.safeTransfer(msg.sender, feeReward);
+        uint256 userAmount = feeReward - uRewardDept;
+        console.log('fee to claim is: %s', userAmount);
+        require(coverPremium >= userAmount, 'Account: Insufficient balance');
+        feesToken.safeTransfer(msg.sender, userAmount);
     }
 
     function VerifyCover() external payable {
