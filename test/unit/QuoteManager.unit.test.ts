@@ -12,6 +12,7 @@ import { Decimals18 } from '../../helpers/functions';
 import { increase } from '@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time';
 import initials from '../../helpers/deploy-initials';
 import { BigNumber } from 'ethers';
+import { time } from '@nomicfoundation/hardhat-network-helpers';
 
 describe('Quote Manager Unit Test', function () {
     // set-up
@@ -170,19 +171,25 @@ describe('Quote Manager Unit Test', function () {
             );
         });
         it('GetQuoteData - V account & V qid', async function () {
-            expect(
-                (
-                    await Mock_QuoteManager_USER_C.GetQuoteData(
-                        externalDeployer,
-                        123
-                    )
-                )[0]
-            ).to.eq([
-                new BigNumber('', '0x043c33c1937564800000'),
-                90,
-                Decimals18(),
-                new BigNumber('', '0x1b1ae4d6e2ef500000'),
-            ]);
+            const [res] = await Mock_QuoteManager_USER_C.GetQuoteData(
+                minter,
+                123
+            );
+
+            expect(res.balance).to.be.eq(
+                BigNumber.from(Decimals18(constants._20k))
+            );
+            expect(res.period).to.be.eq(90);
+            expect(res.endDate).to.be.eq(
+                BigNumber.from(
+                    ((await time.latest()) + 90 * 24 * 60 * 60).toString()
+                )
+            );
+            expect(res.premium).to.be.eq(
+                BigNumber.from(Decimals18(constants._20k))
+                    .mul(250 * 90)
+                    .div(3650000)
+            );
         });
         it('GetQuoteData - X account & V qid', async function () {
             await expect(
