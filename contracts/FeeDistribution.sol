@@ -99,13 +99,10 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
         uint256 coverPremium = feesToken.balanceOf(address(this));
         FeeInfo memory feesInfo = updateFeesInfo();
 
-        // uint256 feeReward = ((((shareInPool[user] / (TOTAL_POOL_SIZE)) *
-        //     (tokenPerSecRate)) / (ACC_TOKEN_PRECISION)) * (FEES_PERCENTAGE)) /
-        //     (100);
         uint256 uRewardDept = userFeesPerTokenPaid[msg.sender];
         uint256 feeReward = ((FEES_PERCENTAGE *
             feesInfo.accTokenPerShare *
-            uShareInPool) / (ACC_TOKEN_PRECISION * poolTotal * 100)); // still need to substruct the previusly paid reward
+            uShareInPool) / (ACC_TOKEN_PRECISION * poolTotal * 100));
         userFeesPerTokenPaid[msg.sender] = feeReward; // need to check what to do with those two params, as we need to subtract the preiously paid
         //fees[msg.sender] += feeReward;                // and keep track of not over paying
         uint256 userAmount = feeReward - uRewardDept;

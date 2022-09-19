@@ -103,8 +103,8 @@ contract InsurancePool is
         require(available >= _amount, 'Pool: Insufficient available funds ');
         funds[msg.sender] -= _amount;
         totalFunds -= _amount;
-        STABLE_COIN.safeApprove(msg.sender, _amount);
-        STABLE_COIN.safeTransferFrom(address(this), msg.sender, _amount);
+        // STABLE_COIN.safeIncreaseAllowance(msg.sender, _amount);
+        STABLE_COIN.safeTransfer(msg.sender, _amount);
         emit PoolFundWithdrawn(msg.sender, _amount);
     }
 
