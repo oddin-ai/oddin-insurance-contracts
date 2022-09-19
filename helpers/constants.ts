@@ -1,5 +1,3 @@
-import { ethers } from 'hardhat';
-
 export default {
     _10: '10',
     _50: '50',
