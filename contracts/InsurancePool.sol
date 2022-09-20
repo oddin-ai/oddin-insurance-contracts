@@ -112,6 +112,10 @@ contract InsurancePool is
         return activeCoverage;
     }
 
+    function CoverAvailability() external view returns (uint256) {
+        return totalFunds - activeCoverage;
+    }
+
     function ShareInPool(address _account)
         external
         view
@@ -122,9 +126,10 @@ contract InsurancePool is
 
     function updateActiveCoverage(bool _add, uint256 _amount)
         external
+        onlyRole(COVER_MANAGER)
         returns (bool)
     {
-        require(hasRole(COVER_MANAGER, msg.sender), 'Pool: NOT Authorized');
+        // require(hasRole(COVER_MANAGER, msg.sender), 'Pool: NOT Authorized');
         require(_amount > 0, 'Pool: Insufficient cover amount');
         if (!_add) {
             activeCoverage -= _amount;

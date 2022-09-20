@@ -18,8 +18,8 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
     IERC20 public immutable feesToken;
     IInsurancePool public immutable pool;
     IQuoteManager public immutable quoteManager;
-    uint256 public tokenPerSecRate;
 
+    uint256 public tokenPerSecRate;
     uint256 private constant ACC_TOKEN_PRECISION = 1e18;
     uint256 private constant FEES_PERCENTAGE = 50; // development
 
@@ -124,15 +124,16 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
         ) {
             // TODO: also require the quate to be not verified!!!
             require(active, 'VerifyCover: Quate is not active!');
-            uint256 premium = cd.premium;
+            uint256 _premium = cd.premium;
             require(
-                _premiumAmount >= premium,
+                _premiumAmount >= _premium,
                 'VerifyCover: Fee amount not sufficiant!'
             );
-            console.log('premium to pay: %s', premium);
-            feesToken.safeTransferFrom(msg.sender, address(this), premium);
+            console.log('premium to pay: %s', _premium);
+            feesToken.safeTransferFrom(msg.sender, address(this), _premium);
             console.log('we passed safeTransferFrom with %s', _qid);
             quoteManager.Verify(msg.sender, _qid);
+            pool.updateActiveCoverage(true, _premium);
             emit CoverVerified(msg.sender);
         } catch Error(string memory err) {
             console.log('Error catch');

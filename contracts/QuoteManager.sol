@@ -10,6 +10,7 @@ import '@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeab
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 // import './types/TQuoteManager.sol';
 import './interfaces/IQuoteManager.sol';
+import './interfaces/IInsurancePool.sol';
 import 'hardhat/console.sol';
 
 contract QuoteManager is
@@ -32,6 +33,7 @@ contract QuoteManager is
     mapping(address => mapping(uint256 => Quote)) public quotes;
 
     bytes32 public constant COVER_VERIFIER = keccak256('COVER_VERIFIER');
+    IInsurancePool public INSURANCE_POOL;
 
     // ------- ^ State variables ^ -------
 
@@ -46,10 +48,11 @@ contract QuoteManager is
     // ------- ^ Modifiers ^ -------
 
     // Initiation:
-    function initialize(uint16[3] memory _periods, uint16 _validDuration)
-        public
-        initializer
-    {
+    function initialize(
+        uint16[3] memory _periods,
+        uint16 _validDuration,
+        address _insurancePool
+    ) public initializer {
         // add initializers/constructors of parent libraries
         __Ownable_init();
         __ReentrancyGuard_init();
@@ -66,6 +69,7 @@ contract QuoteManager is
         require(_validDuration > 0, 'Valid duration is too short');
         periods = _periods;
         validDuration = _validDuration;
+        INSURANCE_POOL = IInsurancePool(_insurancePool);
     }
 
     // ------- ^ Initiation ^ -------
@@ -85,6 +89,10 @@ contract QuoteManager is
         returns (uint256, uint256)
     {
         require(_amount > 0, 'QuoteManager: Insufficient amount');
+        require(
+            INSURANCE_POOL.CoverAvailability() >= _amount,
+            'QuoteManager: Insufficient pool funds'
+        );
         uint16 _period = getPeriod(_periodtype);
         (uint256 _qid, uint256 _premium) = calculatePremium(_amount, _period);
         saveQuote(_amount, _period, _premium, _qid);
@@ -124,7 +132,10 @@ contract QuoteManager is
         return quotes[_account][_qid];
     }
 
-    function Verify(address _account, uint256 _qid) external {
+    function Verify(address _account, uint256 _qid)
+        external
+        onlyRole(COVER_VERIFIER)
+    {
         require(
             hasRole(COVER_VERIFIER, msg.sender),
             'QuoteManager: NOT Authorized to verify'
@@ -142,9 +153,21 @@ contract QuoteManager is
 
     //// public
 
-    function setCoverVerifier(address _cv) public onlyOwner {
+    function setCoverVerifier(address _cv)
+        public
+        onlyOwner
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         grantRole(COVER_VERIFIER, _cv);
     }
+
+    // function setPoolVerifier(address _cv)
+    //     public
+    //     onlyOwner
+    //     onlyRole(DEFAULT_ADMIN_ROLE)
+    // {
+    //     grantRole(POOL_VERIFIER, _cv);
+    // }
 
     //// internal
     function saveQuote(
