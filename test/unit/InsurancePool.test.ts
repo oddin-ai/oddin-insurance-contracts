@@ -1,21 +1,17 @@
 import { expect } from 'chai';
-import { network, deployments, ethers, getNamedAccounts } from 'hardhat';
+import { deployments, ethers, getNamedAccounts } from 'hardhat';
 import {
     FiatTokenV1,
     InsurancePool,
-    CoverManager,
+    QuoteManager,
 } from '../../typechain-types';
 import constants from '../../helpers/constants';
 import { Decimals18 } from '../../helpers/functions';
 import {} from '../../deploy/00-deploy-mocks';
-import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-// import deployMock_FiatTokenV1 from '../../deploy/00-deploy-mock-FiatTokenV1';
 
 describe('Insurance Pool Test', function () {
     // set-up
-    let accounts;
-    let externalDeployer: string;
     let deployer: string;
     let user_a: string;
     let user_b: string;
@@ -27,7 +23,7 @@ describe('Insurance Pool Test', function () {
     let minter_Singer: SignerWithAddress;
     let Mock_fUSD: FiatTokenV1;
     let Mock_InsurancePool: InsurancePool;
-    let Mock_CoverManager: CoverManager;
+    let Mock_QuoteManager: QuoteManager;
     before(async () => {
         // await network.provider.send('hardhat_reset');
         const namedAccounts = await getNamedAccounts();
@@ -38,12 +34,10 @@ describe('Insurance Pool Test', function () {
         user_a_Singer = await ethers.getSigner(namedAccounts.user_a);
         user_b_Singer = await ethers.getSigner(namedAccounts.user_b);
         minter_Singer = await ethers.getSigner(namedAccounts.externalAdmin);
-        externalDeployer = externalDeployer_Singer.address;
         deployer = deployer_Singer.address;
         user_a = user_a_Singer.address;
         user_b = user_b_Singer.address;
         minter = minter_Singer.address;
-        accounts = await ethers.getSigners();
         await deployments.fixture(['all']);
     });
 
@@ -56,7 +50,6 @@ describe('Insurance Pool Test', function () {
                 deployer
             );
             Mock_fUSD = await ethers.getContract('FiatTokenV1', deployer);
-            // MockCoverManager = await ethers.getContract("CoverManager")
             await Mock_fUSD.connect(externalDeployer_Singer).configureMinter(
                 minter,
                 Decimals18(constants._1m)
@@ -155,8 +148,8 @@ describe('Insurance Pool Test', function () {
                 deployer
             );
             Mock_fUSD = await ethers.getContract('FiatTokenV1', deployer);
-            Mock_CoverManager = await ethers.getContract(
-                'CoverManager',
+            Mock_QuoteManager = await ethers.getContract(
+                'QuoteManager',
                 deployer
             );
             // populate fUSD
@@ -173,7 +166,7 @@ describe('Insurance Pool Test', function () {
                 Decimals18(constants._50k)
             );
             await Mock_fUSD.connect(minter_Singer).mint(
-                Mock_CoverManager.address,
+                Mock_QuoteManager.address,
                 Decimals18(constants._5k)
             );
             // populate pool
@@ -206,11 +199,11 @@ describe('Insurance Pool Test', function () {
             expect(await Mock_fUSD.balanceOf(Mock_InsurancePool.address)).to.eq(
                 Decimals18(constants._150k)
             );
-            expect(await Mock_fUSD.balanceOf(Mock_CoverManager.address)).to.eq(
+            expect(await Mock_fUSD.balanceOf(Mock_QuoteManager.address)).to.eq(
                 Decimals18(constants._5k)
             );
         });
-        it('Withdraw - available amount & sufficient4 active cover balance', async function () {
+        it('Withdraw - available amount & sufficient active cover balance', async function () {
             await expect(
                 Mock_InsurancePool.connect(user_a_Singer).Withdraw(
                     Decimals18(constants._50k)

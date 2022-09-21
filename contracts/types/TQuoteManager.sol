@@ -6,4 +6,5 @@ import './TCoverManager.sol';
 struct Quote {
     CoverDetails cover;
     uint256 expiry;
+    bool verified;
 }

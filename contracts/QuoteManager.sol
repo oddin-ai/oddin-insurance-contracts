@@ -7,14 +7,18 @@ import '@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 // import './types/TQuoteManager.sol';
 import './interfaces/IQuoteManager.sol';
+import './interfaces/IInsurancePool.sol';
+import 'hardhat/console.sol';
 
 contract QuoteManager is
     IQuoteManager,
     Initializable,
-    ReentrancyGuardUpgradeable,
     OwnableUpgradeable,
+    AccessControlUpgradeable,
+    ReentrancyGuardUpgradeable,
     UUPSUpgradeable
 {
     // Type declarations:
@@ -28,10 +32,14 @@ contract QuoteManager is
 
     mapping(address => mapping(uint256 => Quote)) public quotes;
 
+    bytes32 public constant COVER_VERIFIER = keccak256('COVER_VERIFIER');
+    IInsurancePool public INSURANCE_POOL;
+
     // ------- ^ State variables ^ -------
 
     // Events:
     event oddinNewQuote(address, uint256, uint256);
+    event QuoteVerified(address, uint256);
 
     // ------- ^ Events ^ -------
 
@@ -40,14 +48,17 @@ contract QuoteManager is
     // ------- ^ Modifiers ^ -------
 
     // Initiation:
-    function initialize(uint16[3] memory _periods, uint16 _validDuration)
-        public
-        initializer
-    {
+    function initialize(
+        uint16[3] memory _periods,
+        uint16 _validDuration,
+        address _insurancePool
+    ) public initializer {
         // add initializers/constructors of parent libraries
         __Ownable_init();
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
+        __AccessControl_init();
+        _grantRole(DEFAULT_ADMIN_ROLE, owner());
 
         for (uint8 i = 1; i < periods.length; i += 1) {
             require(
@@ -58,6 +69,7 @@ contract QuoteManager is
         require(_validDuration > 0, 'Valid duration is too short');
         periods = _periods;
         validDuration = _validDuration;
+        INSURANCE_POOL = IInsurancePool(_insurancePool);
     }
 
     // ------- ^ Initiation ^ -------
@@ -77,6 +89,10 @@ contract QuoteManager is
         returns (uint256, uint256)
     {
         require(_amount > 0, 'QuoteManager: Insufficient amount');
+        require(
+            INSURANCE_POOL.CoverAvailability() >= _amount,
+            'QuoteManager: Insufficient pool funds'
+        );
         uint16 _period = getPeriod(_periodtype);
         (uint256 _qid, uint256 _premium) = calculatePremium(_amount, _period);
         saveQuote(_amount, _period, _premium, _qid);
@@ -94,6 +110,7 @@ contract QuoteManager is
             _q.cover.balance > 0,
             'QuoteManager: No Quotes with given address/QID'
         );
+
         bool _valid;
         if (_q.expiry > block.timestamp) {
             _valid = true;
@@ -115,7 +132,42 @@ contract QuoteManager is
         return quotes[_account][_qid];
     }
 
+    function Verify(address _account, uint256 _qid)
+        external
+        onlyRole(COVER_VERIFIER)
+    {
+        require(
+            hasRole(COVER_VERIFIER, msg.sender),
+            'QuoteManager: NOT Authorized to verify'
+        );
+        Quote memory _q = quotes[_account][_qid];
+        require(
+            _q.expiry > 0,
+            'QuoteManager: No Quotes with given address/QID'
+        );
+        require(_q.verified != true, 'QuoteManager: Quote already verified');
+        _q.verified = true;
+        quotes[_account][_qid] = _q;
+        emit QuoteVerified(_account, _qid);
+    }
+
     //// public
+
+    function setCoverVerifier(address _cv)
+        public
+        onlyOwner
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        grantRole(COVER_VERIFIER, _cv);
+    }
+
+    // function setPoolVerifier(address _cv)
+    //     public
+    //     onlyOwner
+    //     onlyRole(DEFAULT_ADMIN_ROLE)
+    // {
+    //     grantRole(POOL_VERIFIER, _cv);
+    // }
 
     //// internal
     function saveQuote(
@@ -132,7 +184,8 @@ contract QuoteManager is
         // check current cover details
         quotes[msg.sender][_qid] = Quote(
             CoverDetails(_amount, _period, _endDate, _premium),
-            _expiry
+            _expiry,
+            false
         );
     }
 
