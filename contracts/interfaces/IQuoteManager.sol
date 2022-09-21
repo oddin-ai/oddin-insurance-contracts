@@ -17,4 +17,6 @@ interface IQuoteManager {
         external
         view
         returns (Quote memory);
+
+    function Verify(address _account, uint256 _qid) external;
 }

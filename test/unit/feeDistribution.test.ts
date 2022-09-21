@@ -10,7 +10,7 @@ import {
     FeeDistribution,
     FiatTokenV1,
     InsurancePool,
-    CoverManager,
+    QuoteManager,
 } from './../../typechain-types';
 
 !developmentChains.includes(network.name)
@@ -19,12 +19,13 @@ import {
           let distributer: FeeDistribution;
           let mockFeesToken: FiatTokenV1;
           let insurancePool: InsurancePool;
-          let manager: CoverManager;
+          let manager: QuoteManager;
           let deployer: string;
           let minter: string;
           let externalDeployer: string;
 
           before(async () => {
+              await network.provider.send('hardhat_reset');
               const namgedAccounts = await getNamedAccounts();
               deployer = namgedAccounts.deployer;
               externalDeployer = namgedAccounts.externalDeployer;
@@ -38,19 +39,12 @@ import {
                   'InsurancePool',
                   deployer
               );
-              manager = await ethers.getContract('CoverManager', deployer);
+              manager = await ethers.getContract('QuoteManager', deployer);
 
-              //   mockFeesToken = await ethers.getContract('FUSDDToken', deployer);
-              //   await mockFeesToken.transfer(
-              //       distributer.address,
-              //       ethers.utils.parseUnits('1000', 'ether'),
-              //       { from: deployer }
-              //   );
               mockFeesToken = await ethers.getContract(
                   'FiatTokenV1',
                   externalDeployer
               );
-              // MockCoverManager = await ethers.getContract("CoverManager")
               const contactedToken = await mockFeesToken.connect(
                   await ethers.getSigner(externalDeployer)
               );
@@ -178,6 +172,24 @@ import {
           });
 
           describe('verifyCover', async () => {
+              before(async () => {
+                  await deployments.fixture(['all']);
+                  await mockFeesToken
+                      .connect(await ethers.getSigner(externalDeployer))
+                      .configureMinter(minter, Decimals18(constants._1m));
+                  await mockFeesToken
+                      .connect(await ethers.getSigner(minter))
+                      .mint(deployer, Decimals18(constants._200k));
+                  await mockFeesToken
+                      .connect(await ethers.getSigner(deployer))
+                      .approve(
+                          insurancePool.address,
+                          Decimals18(constants._200k)
+                      );
+                  await insurancePool
+                      .connect(await ethers.getSigner(deployer))
+                      .Deposit(Decimals18(constants._200k));
+              });
               it('Emits event CoverVerified', async () => {
                   const accounts = await ethers.getSigners();
                   const workingAccount = accounts[6];
@@ -186,7 +198,34 @@ import {
                       workingAccount
                   );
 
-                  await expect(feesConnectedContract.VerifyCover())
+                  await mockFeesToken
+                      .connect(await ethers.getSigner(minter))
+                      .mint(workingAccount.address, Decimals18(constants._1k));
+
+                  const Mock_QuoteManager_USER_A =
+                      manager.connect(workingAccount);
+                  const txResponse = await Mock_QuoteManager_USER_A.GetQuote(
+                      Decimals18(constants._2k),
+                      0
+                  );
+                  const txReceipt = await txResponse.wait();
+                  const premiumLog = txReceipt.events?.filter((x) => {
+                      return x.event == 'oddinNewQuote';
+                  });
+                  const premiumAmount = premiumLog
+                      ? premiumLog.length > 0
+                          ? premiumLog[0].args
+                              ? premiumLog[0].args[2]
+                              : 0
+                          : 0
+                      : 0;
+                  await mockFeesToken
+                      .connect(workingAccount)
+                      .approve(distributer.address, Decimals18(constants._10k));
+
+                  await expect(
+                      feesConnectedContract.VerifyCover(123, premiumAmount)
+                  )
                       .to.emit(feesConnectedContract, 'CoverVerified')
                       .withArgs(workingAccount.address);
               });

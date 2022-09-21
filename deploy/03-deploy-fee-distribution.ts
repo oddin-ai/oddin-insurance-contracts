@@ -1,6 +1,7 @@
 import { network, ethers } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { developmentChains, networkConfig } from '../helper-hardhat-config';
+import { QuoteManager } from '../typechain-types';
 // import { verify } from '../utils/verify';
 
 const deployFeeDistribution = async (hre: HardhatRuntimeEnvironment) => {
@@ -21,7 +22,7 @@ const deployFeeDistribution = async (hre: HardhatRuntimeEnvironment) => {
         fusdd = stableCoin.address;
         const pool = await deployments.get('InsurancePool');
         iPool = pool.address;
-        const manager = await deployments.get('CoverManager');
+        const manager = await deployments.get('QuoteManager');
         cManager = manager.address;
     } else {
         if (chainId) {
@@ -32,7 +33,7 @@ const deployFeeDistribution = async (hre: HardhatRuntimeEnvironment) => {
 
     const args = [fusdd, iPool, cManager, speed];
     // TODO: I'm not doing verification for now
-    await deploy('FeeDistribution', {
+    const c = await deploy('FeeDistribution', {
         from: deployer,
         args: args,
         log: true,
