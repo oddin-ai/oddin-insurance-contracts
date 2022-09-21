@@ -25,6 +25,7 @@ import {
           let externalDeployer: string;
 
           before(async () => {
+              await network.provider.send('hardhat_reset');
               const namgedAccounts = await getNamedAccounts();
               deployer = namgedAccounts.deployer;
               externalDeployer = namgedAccounts.externalDeployer;
@@ -171,6 +172,24 @@ import {
           });
 
           describe('verifyCover', async () => {
+              before(async () => {
+                  await deployments.fixture(['all']);
+                  await mockFeesToken
+                      .connect(await ethers.getSigner(externalDeployer))
+                      .configureMinter(minter, Decimals18(constants._1m));
+                  await mockFeesToken
+                      .connect(await ethers.getSigner(minter))
+                      .mint(deployer, Decimals18(constants._200k));
+                  await mockFeesToken
+                      .connect(await ethers.getSigner(deployer))
+                      .approve(
+                          insurancePool.address,
+                          Decimals18(constants._200k)
+                      );
+                  await insurancePool
+                      .connect(await ethers.getSigner(deployer))
+                      .Deposit(Decimals18(constants._200k));
+              });
               it('Emits event CoverVerified', async () => {
                   const accounts = await ethers.getSigners();
                   const workingAccount = accounts[6];

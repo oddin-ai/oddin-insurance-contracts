@@ -12,6 +12,8 @@ interface IInsurancePool {
 
     function ActiveCoverage() external view returns (uint256);
 
+    function CoverAvailability() external view returns (uint256);
+
     function ShareInPool(address _account)
         external
         view

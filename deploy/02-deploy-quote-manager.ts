@@ -15,20 +15,20 @@ const deployQuoteManager = async (hre: HardhatRuntimeEnvironment) => {
     let insurancepool;
     let validDuration = initials.validDuration;
     let periods = initials.periods;
-    // if (
-    //     network.name !== undefined &&
-    //     developmentChains.includes(network.name)
-    // ) {
-    //     fusd = (await deployments.get('FiatTokenV1')).address;
-    //     insurancepool = (await deployments.get('InsurancePool')).address;
-    // } else {
-    //     if (chainId) {
-    //         fusd = null; // this is for now, need to see how to do on-chain testing
-    //         insurancepool = null;
-    //     }
-    // }
+    if (
+        network.name !== undefined &&
+        developmentChains.includes(network.name)
+    ) {
+        // fusd = (await deployments.get('FiatTokenV1')).address;
+        insurancepool = (await deployments.get('InsurancePool')).address;
+    } else {
+        if (chainId) {
+            // fusd = null; // this is for now, need to see how to do on-chain testing
+            insurancepool = null;
+        }
+    }
 
-    const args = [periods, validDuration];
+    const args = [periods, validDuration, insurancepool];
     // TODO: I'm not doing verification for now
     const c = await deployProxy(
         await getContractFactory(DEPLOY_CONTRACT, deployer),
