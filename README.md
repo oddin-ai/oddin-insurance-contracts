@@ -76,8 +76,9 @@ This is an example of how to list things you need to use the software and how to
 - [x] Insurance pool contract
 - [x] Upgradable Insurance pool contract
 - [x] Cover management contract
-- [ ] Claim tokens
-- [ ] Get quatation for cover
+- [x] Claim tokens
+- [x] Get quatation for cover
+- [ ] Cover history
 - [ ] Test Covarage
 - [ ] Gas optimization
 
