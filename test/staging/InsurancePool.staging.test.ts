@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { deployments, ethers, getNamedAccounts } from 'hardhat';
+import { deployments, ethers, getNamedAccounts, network } from 'hardhat';
 import {
     FiatTokenV1,
     InsurancePool,
@@ -10,7 +10,7 @@ import { Decimals18 } from '../../helpers/functions';
 import {} from '../../deploy/00-deploy-mocks';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
-describe('Insurance Pool Test', function () {
+describe('Insurance Pool Staging Test', function () {
     // set-up
     let deployer: string;
     let user_a: string;
@@ -25,7 +25,7 @@ describe('Insurance Pool Test', function () {
     let Mock_InsurancePool: InsurancePool;
     let Mock_QuoteManager: QuoteManager;
     before(async () => {
-        // await network.provider.send('hardhat_reset');
+        await network.provider.send('hardhat_reset');
         const namedAccounts = await getNamedAccounts();
         externalDeployer_Singer = await ethers.getSigner(
             namedAccounts.externalDeployer

@@ -15,7 +15,7 @@ import {
 
 !developmentChains.includes(network.name)
     ? describe.skip
-    : describe('FeeDistribution tests', async () => {
+    : describe('FeeDistribution Staging tests', async () => {
           let distributer: FeeDistribution;
           let mockFeesToken: FiatTokenV1;
           let insurancePool: InsurancePool;

@@ -28,7 +28,28 @@ if (process.env.NODE_ENV !== 'build') {
             },
         },
         solidity: {
-            compilers: [{ version: '0.6.12' }, { version: '0.8.16' }],
+            compilers: [
+                {
+                    version: '0.6.12',
+                    settings: {
+                        outputSelection: {
+                            '*': {
+                                '*': ['storageLayout'],
+                            },
+                        },
+                    },
+                },
+                {
+                    version: '0.8.16',
+                    settings: {
+                        outputSelection: {
+                            '*': {
+                                '*': ['storageLayout'],
+                            },
+                        },
+                    },
+                },
+            ],
         },
         etherscan: {
             apiKey: ETHERSCAN_API_KEY,
