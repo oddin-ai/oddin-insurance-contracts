@@ -87,23 +87,19 @@ contract InsurancePool is
             STABLE_COIN.balanceOf(msg.sender) >= _amount,
             'Account: Insufficient balance'
         );
-        // make transfer first
         funds[msg.sender] += _amount;
         totalFunds += _amount;
         STABLE_COIN.safeTransferFrom(msg.sender, address(this), _amount);
-        // after approval add fund
         emit PoolFundDeposited(msg.sender, _amount);
     }
 
     function Withdraw(uint256 _amount) external nonReentrant {
         // check amount not 0
         require(_amount > 0, 'Pool: Insufficient withdraw');
-        uint256 available = totalFunds - activeCoverage;
-        // check there is enough balance for active insurance covers
-        require(available >= _amount, 'Pool: Insufficient available funds ');
+        uint256 available = totalFunds - activeCoverage; // use balanceOf instead of totalFunds?
+        require(available >= _amount, 'Pool: Insufficient available funds');
         funds[msg.sender] -= _amount;
-        totalFunds -= _amount;
-        // STABLE_COIN.safeIncreaseAllowance(msg.sender, _amount);
+        totalFunds -= _amount; // use balanceOf instead ?
         STABLE_COIN.safeTransfer(msg.sender, _amount);
         emit PoolFundWithdrawn(msg.sender, _amount);
     }
