@@ -465,10 +465,19 @@ describe('Quote Manager Unit Test', function () {
             await stopImpersonatingAccount(Mock_FeeDistribution.address);
         });
         it('Verify - V COVER_VERIFIER & V account & V qid', async function () {
-            expect(await Mock_QuoteManager_FEEDIST.Verify(user_a, 123))
+            await expect(Mock_QuoteManager_FEEDIST.Verify(user_a, 123))
                 .to.emit(Mock_QuoteManager, 'QuoteVerified')
-                .withArgs(user_a, 123);
+                .withArgs(user_a, 123)
+                .to.emit(Mock_QuoteManager, 'DelegateAmountChanged')
+                .withArgs(user_a, 0, Decimals18(constants._20k));
         });
+
+        // it('Verify - V COVER_VERIFIER & V account & V qid to emit checkpoint DelegateAmountChanged', async function () {
+        //     await expect(Mock_QuoteManager_FEEDIST.Verify(user_a, 123))
+        //         .to.emit(Mock_QuoteManager, 'DelegateAmountChanged')
+        //         .withArgs(user_a, 0, Decimals18(constants._20k));
+        // });
+
         it('Verify - V COVER_VERIFIER & X account & V qid', async function () {
             await expect(
                 Mock_QuoteManager_FEEDIST.Verify(externalDeployer, 123)
