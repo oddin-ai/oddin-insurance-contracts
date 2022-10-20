@@ -98,6 +98,10 @@ contract InsurancePool is
         require(_amount > 0, 'Pool: Insufficient withdraw');
         uint256 available = totalFunds - activeCoverage; // use balanceOf instead of totalFunds?
         require(available >= _amount, 'Pool: Insufficient available funds');
+        require(
+            funds[msg.sender] >= _amount,
+            'Pool: Insufficient withdrawer funds'
+        );
         funds[msg.sender] -= _amount;
         totalFunds -= _amount; // use balanceOf instead ?
         STABLE_COIN.safeTransfer(msg.sender, _amount);
