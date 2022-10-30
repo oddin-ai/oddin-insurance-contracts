@@ -48,7 +48,7 @@ contract QuoteManager is
     event QuoteVerified(address, uint256);
 
     /// @notice this is from Comp Goverance contract https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/Comp.sol
-    /// @notice An event thats emitted when a delegate account's vote balance changes
+    /// @notice An event thats emitted when a delegate account's cover amount (balance) changes
     event DelegateAmountChanged(
         address indexed delegate,
         uint256 previousBalance,
