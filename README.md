@@ -75,11 +75,15 @@ This is an example of how to list things you need to use the software and how to
 
 - [x] Insurance pool contract
 - [x] Upgradable Insurance pool contract
-- [x] Cover management contract
+- [x] Quote management contract
+- [x] Fee Distribution/Quote verification contract
 - [x] Claim tokens
 - [x] Get quatation for cover
-- [ ] Cover history
-- [ ] Test Covarage
+- [x] Cover history
+- [x] Test Covarage
+- [ ] Remove console logs from contracts
+- [ ] Beta whitelisting
+- [ ] Upgradable fee Distribution ???
 - [ ] Gas optimization
 
 See the [open issues](https://github.com/oddin-ai/oddin-insurance-contracts/issues) for a full list of proposed features (and known issues).
