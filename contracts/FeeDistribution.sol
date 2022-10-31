@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
@@ -57,6 +57,12 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
             lastFeeDistributionTimestamp: block.timestamp
         });
     }
+
+    //// receive
+    receive() external payable {}
+
+    //// fallback
+    fallback() external payable {}
 
     /// @notice Sets the distribution reward rate. This will also update the feesInfo.
     /// @param _tokenPerSecRate The number of tokens to distribute per second per share in insurance pool
