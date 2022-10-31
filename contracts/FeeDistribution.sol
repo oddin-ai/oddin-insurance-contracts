@@ -58,6 +58,12 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
         });
     }
 
+    //// receive
+    receive() external payable {}
+
+    //// fallback
+    fallback() external payable {}
+
     /// @notice Sets the distribution reward rate. This will also update the feesInfo.
     /// @param _tokenPerSecRate The number of tokens to distribute per second per share in insurance pool
     function setRewardRate(uint256 _tokenPerSecRate) external onlyOwner {

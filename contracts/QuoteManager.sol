@@ -293,29 +293,11 @@ contract QuoteManager is
         );
 
         uint32 nCheckpoints = numCheckpoints[account];
-        console.log('nCheckpoints: ', nCheckpoints);
         if (nCheckpoints == 0) {
             return 0;
         }
 
         // First check most recent balance
-        console.log('blocknumber: ', blockNumber);
-        console.log(
-            'nCheckpoints - 1 blocknumber: ',
-            checkpoints[account][nCheckpoints - 1].fromBlock
-        );
-        console.log(
-            'nCheckpoints - 1 amount: ',
-            checkpoints[account][nCheckpoints - 1].amount
-        );
-        console.log(
-            'nCheckpoints - 2 blocknumber: ',
-            checkpoints[account][nCheckpoints - 2].fromBlock
-        );
-        console.log(
-            'nCheckpoints - 2 amount: ',
-            checkpoints[account][nCheckpoints - 2].amount
-        );
         if (checkpoints[account][nCheckpoints - 1].fromBlock <= blockNumber) {
             return checkpoints[account][nCheckpoints - 1].amount;
         }
