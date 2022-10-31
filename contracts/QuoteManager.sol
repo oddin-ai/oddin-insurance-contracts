@@ -255,7 +255,7 @@ contract QuoteManager is
     ) internal {
         uint32 blockNumber = safe32(
             block.number,
-            'Comp::_writeCheckpoint: block number exceeds 32 bits'
+            'QuoteManager:writeCheckpoint: block number exceeds 32 bits'
         );
 
         if (
@@ -272,5 +272,72 @@ contract QuoteManager is
         }
 
         emit DelegateAmountChanged(delegatee, oldAmount, newAmount);
+    }
+
+    /**
+     * @notice Determine the cover amount for an account as of a block number
+     * ,this is from Comp Goverance contract https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/Comp.sol
+     * @dev Block number must be a finalized block or else this function will revert to prevent misinformation.
+     * @param account The address of the account to check
+     * @param blockNumber The block number to get the cover amount at
+     * @return The cover amount the account had as of the given block
+     */
+    function getPriorCover(address account, uint256 blockNumber)
+        public
+        view
+        returns (uint256)
+    {
+        require(
+            blockNumber < block.number,
+            'QuoteManager:getPriorCover: not yet determined'
+        );
+
+        uint32 nCheckpoints = numCheckpoints[account];
+        console.log('nCheckpoints: ', nCheckpoints);
+        if (nCheckpoints == 0) {
+            return 0;
+        }
+
+        // First check most recent balance
+        console.log('blocknumber: ', blockNumber);
+        console.log(
+            'nCheckpoints - 1 blocknumber: ',
+            checkpoints[account][nCheckpoints - 1].fromBlock
+        );
+        console.log(
+            'nCheckpoints - 1 amount: ',
+            checkpoints[account][nCheckpoints - 1].amount
+        );
+        console.log(
+            'nCheckpoints - 2 blocknumber: ',
+            checkpoints[account][nCheckpoints - 2].fromBlock
+        );
+        console.log(
+            'nCheckpoints - 2 amount: ',
+            checkpoints[account][nCheckpoints - 2].amount
+        );
+        if (checkpoints[account][nCheckpoints - 1].fromBlock <= blockNumber) {
+            return checkpoints[account][nCheckpoints - 1].amount;
+        }
+
+        // Next check implicit zero balance
+        if (checkpoints[account][0].fromBlock > blockNumber) {
+            return 0;
+        }
+
+        uint32 lower = 0;
+        uint32 upper = nCheckpoints - 1;
+        while (upper > lower) {
+            uint32 center = upper - (upper - lower) / 2; // ceil, avoiding overflow
+            Checkpoint memory cp = checkpoints[account][center];
+            if (cp.fromBlock == blockNumber) {
+                return cp.amount;
+            } else if (cp.fromBlock < blockNumber) {
+                lower = center;
+            } else {
+                upper = center - 1;
+            }
+        }
+        return checkpoints[account][lower].amount;
     }
 }

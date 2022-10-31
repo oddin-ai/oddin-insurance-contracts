@@ -1,10 +1,9 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { network, deployments, ethers, getNamedAccounts } from 'hardhat';
+import { network, ethers, getNamedAccounts } from 'hardhat';
 import {
     FiatTokenV1,
     InsurancePool,
-    CoverManager,
     QuoteManager,
     FeeDistribution,
     FiatTokenV1__factory,
@@ -19,6 +18,7 @@ import initials from '../../helpers/deploy-initials';
 import { BigNumber, BigNumberish } from 'ethers';
 import {
     impersonateAccount,
+    mine,
     setBalance,
     stopImpersonatingAccount,
     time,
@@ -556,6 +556,84 @@ describe('Quote Manager Unit Test', function () {
                     user_a
                 )
             ).to.be.false;
+        });
+    });
+
+    describe('function getPriorCover(address account, uint256 blockNumber)', function () {
+        let Mock_QuoteManager_USER_A: MockContract<QuoteManager>;
+        let Mock_QuoteManager_FEEDIST: MockContract<QuoteManager>;
+        before(async () => {
+            funds[user_a] = Decimals18(constants._200k);
+            await Mock_InsurancePool.setVariable('funds', funds);
+
+            balances[Mock_InsurancePool.address] = Decimals18('700000');
+            balances[user_a] = Decimals18('300000');
+            await Mock_fUSD.setVariable('balances', balances);
+
+            await Mock_InsurancePool.setVariable(
+                'totalFunds',
+                Decimals18(constants._200k)
+            );
+            await Mock_InsurancePool.setVariable(
+                'activeCoverage',
+                Decimals18(constants._1k)
+            );
+            Mock_QuoteManager_USER_A = Mock_QuoteManager.connect(user_a_Singer);
+            Mock_QuoteManager.connect(deployer_Singer).setCoverVerifier(
+                Mock_FeeDistribution.address
+            );
+
+            await impersonateAccount(Mock_FeeDistribution.address);
+            await setBalance(
+                Mock_FeeDistribution.address,
+                BigNumber.from(Decimals18(constants._1k)).toHexString()
+            );
+            Mock_QuoteManager_FEEDIST = Mock_QuoteManager.connect(
+                await ethers.getSigner(Mock_FeeDistribution.address)
+            );
+        });
+        after(async () => {
+            await stopImpersonatingAccount(Mock_FeeDistribution.address);
+        });
+
+        it('getPriorCover - block number too high', async function () {
+            await expect(
+                Mock_QuoteManager_USER_A.getPriorCover(
+                    user_a_Singer.address,
+                    (await time.latestBlock()) + 10
+                )
+            ).to.be.reverted;
+        });
+
+        it('getPriorCover - get cover amount, no user covers', async function () {
+            const res = await Mock_QuoteManager_USER_A.getPriorCover(
+                user_a_Singer.address,
+                1
+            );
+            expect(res).to.be.eq(0);
+        });
+
+        it('getPriorCover - get cover amount', async function () {
+            // arrange
+            await Mock_QuoteManager_USER_A.GetQuote(
+                Decimals18(constants._20k),
+                1
+            );
+            await Mock_QuoteManager_FEEDIST.Verify(user_a, 123);
+
+            // act
+            const resMinus1 = await Mock_QuoteManager_USER_A.getPriorCover(
+                user_a,
+                (await time.latestBlock()) - 2
+            );
+            mine(2);
+            const res = await Mock_QuoteManager_USER_A.getPriorCover(
+                user_a,
+                (await time.latestBlock()) - 1
+            );
+            // assert
+            expect(resMinus1).to.be.eq(0);
+            expect(res).to.be.eq(Decimals18(constants._20k));
         });
     });
     // describe('Function setPoolVerifier(address _cv) public onlyOwner onlyRole(DEFAULT_ADMIN_ROLE)', function () {
