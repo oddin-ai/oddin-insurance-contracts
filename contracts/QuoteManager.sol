@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
@@ -35,11 +35,25 @@ contract QuoteManager is
     bytes32 public constant COVER_VERIFIER = keccak256('COVER_VERIFIER');
     IInsurancePool public INSURANCE_POOL;
 
+    /// @notice this is from Comp Goverance contract https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/Comp.sol
+    /// @notice A record of amount checkpoints for each account, by index
+    mapping(address => mapping(uint32 => Checkpoint)) public checkpoints;
+
+    /// @notice The number of checkpoints for each account
+    mapping(address => uint32) public numCheckpoints;
     // ------- ^ State variables ^ -------
 
     // Events:
     event oddinNewQuote(address, uint256, uint256);
     event QuoteVerified(address, uint256);
+
+    /// @notice this is from Comp Goverance contract https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/Comp.sol
+    /// @notice An event thats emitted when a delegate account's cover amount (balance) changes
+    event DelegateAmountChanged(
+        address indexed delegate,
+        uint256 previousBalance,
+        uint256 newBalance
+    );
 
     // ------- ^ Events ^ -------
 
@@ -148,6 +162,7 @@ contract QuoteManager is
         require(_q.verified != true, 'QuoteManager: Quote already verified');
         _q.verified = true;
         quotes[_account][_qid] = _q;
+        writeCheckpoint(_account, 1, 0, _q.cover.balance);
         emit QuoteVerified(_account, _qid);
     }
 
@@ -220,5 +235,91 @@ contract QuoteManager is
     /// @notice Get the duration of a pre-defined period days in seconds
     function getPeriodDuration(uint16 _period) internal pure returns (uint32) {
         return uint32(_period) * (1 days);
+    }
+
+    /// @notice this is from Comp Goverance contract https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/Comp.sol
+    function safe32(uint256 n, string memory errorMessage)
+        internal
+        pure
+        returns (uint32)
+    {
+        require(n < 2**32, errorMessage);
+        return uint32(n);
+    }
+
+    function writeCheckpoint(
+        address delegatee,
+        uint32 nCheckpoints,
+        uint256 oldAmount,
+        uint256 newAmount
+    ) internal {
+        uint32 blockNumber = safe32(
+            block.number,
+            'QuoteManager:writeCheckpoint: block number exceeds 32 bits'
+        );
+
+        if (
+            nCheckpoints > 0 &&
+            checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber
+        ) {
+            checkpoints[delegatee][nCheckpoints - 1].amount = newAmount;
+        } else {
+            checkpoints[delegatee][nCheckpoints] = Checkpoint(
+                blockNumber,
+                newAmount
+            );
+            numCheckpoints[delegatee] = nCheckpoints + 1;
+        }
+
+        emit DelegateAmountChanged(delegatee, oldAmount, newAmount);
+    }
+
+    /**
+     * @notice Determine the cover amount for an account as of a block number
+     * ,this is from Comp Goverance contract https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/Comp.sol
+     * @dev Block number must be a finalized block or else this function will revert to prevent misinformation.
+     * @param account The address of the account to check
+     * @param blockNumber The block number to get the cover amount at
+     * @return The cover amount the account had as of the given block
+     */
+    function getPriorCover(address account, uint256 blockNumber)
+        public
+        view
+        returns (uint256)
+    {
+        require(
+            blockNumber < block.number,
+            'QuoteManager:getPriorCover: not yet determined'
+        );
+
+        uint32 nCheckpoints = numCheckpoints[account];
+        if (nCheckpoints == 0) {
+            return 0;
+        }
+
+        // First check most recent balance
+        if (checkpoints[account][nCheckpoints - 1].fromBlock <= blockNumber) {
+            return checkpoints[account][nCheckpoints - 1].amount;
+        }
+
+        // Next check implicit zero balance
+        if (checkpoints[account][0].fromBlock > blockNumber) {
+            return 0;
+        }
+
+        uint32 lower = 0;
+        uint32 upper = nCheckpoints - 1;
+        while (upper > lower) {
+            uint32 center = upper - (upper - lower) / 2; // ceil, avoiding overflow
+            Checkpoint memory cp = checkpoints[account][center];
+            if (cp.fromBlock == blockNumber) {
+                return cp.amount;
+            } else if (cp.fromBlock < blockNumber) {
+                lower = center;
+            } else {
+                upper = center - 1;
+            }
+        }
+        return checkpoints[account][lower].amount;
     }
 }

@@ -8,3 +8,9 @@ struct Quote {
     uint256 expiry;
     bool verified;
 }
+
+/// @notice A checkpoint for marking number of votes from a given block
+struct Checkpoint {
+    uint32 fromBlock;
+    uint256 amount;
+}
