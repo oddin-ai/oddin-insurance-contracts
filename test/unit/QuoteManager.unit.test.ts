@@ -24,6 +24,7 @@ import {
     time,
 } from '@nomicfoundation/hardhat-network-helpers';
 import { MockContract, smock } from '@defi-wonderland/smock';
+import { assert } from 'console';
 
 describe('Quote Manager Unit Test', function () {
     // set-up
@@ -117,6 +118,21 @@ describe('Quote Manager Unit Test', function () {
             ethers.utils.parseUnits('16000', 'gwei')
         );
     });
+    describe('Function ApproveUser', async () => {
+        let Mock_QuoteManager_USER_A: MockContract<QuoteManager>;
+        before(async () => {
+            Mock_QuoteManager_USER_A =
+                    Mock_QuoteManager.connect(user_a_Singer);
+        });
+        it('ApproveUser - Owner approving user a', async () => {
+            await Mock_QuoteManager.ApproveUser(user_a);
+            expect(await Mock_QuoteManager.IsApprovedUser(user_a)).to.be.eq(true);
+            expect(await Mock_QuoteManager.IsApprovedUser(user_b)).to.be.eq(false);
+        });
+        it('ApproveUser - Not Owner approving user a', async () => {
+            await expect(Mock_QuoteManager_USER_A.ApproveUser(user_a)).to.be.revertedWith('Ownable: caller is not the owner');
+        });
+    });
     describe('Function GetQuote(uint256 _amount, Periods _periodtype) external payable returns (uint256, uint256)', function () {
         let Mock_QuoteManager_USER_A: MockContract<QuoteManager>;
         let Mock_QuoteManager_USER_B: MockContract<QuoteManager>;
@@ -143,6 +159,26 @@ describe('Quote Manager Unit Test', function () {
                     Mock_QuoteManager.connect(user_a_Singer);
                 Mock_QuoteManager_USER_B =
                     Mock_QuoteManager.connect(user_b_Singer);
+
+                await Mock_QuoteManager.ApproveUser(user_a);
+            });
+            it('GetQuote - User is Whitelisted', async () => {
+                await expect(
+                    Mock_QuoteManager_USER_A.GetQuote(
+                        Decimals18(constants._20k),
+                        0
+                    )
+                )
+                    .to.emit(Mock_QuoteManager, 'oddinNewQuote');
+            });
+            it('GetQuote - User is NOT Whitelisted', async () => {
+                await expect(
+                    Mock_QuoteManager_USER_B.GetQuote(
+                        Decimals18(constants._20k),
+                        0
+                    )
+                )
+                .to.be.revertedWith('QuoteManager: User not approved');
             });
             it('GetQuote - NEW & V amount & V periodtype (0)', async function () {
                 const p = Math.floor(
@@ -224,13 +260,9 @@ describe('Quote Manager Unit Test', function () {
 
                 Mock_QuoteManager_USER_A =
                     Mock_QuoteManager.connect(user_a_Singer);
-                Mock_QuoteManager_USER_B =
-                    Mock_QuoteManager.connect(user_b_Singer);
+                await Mock_QuoteManager.ApproveUser(user_a);
             });
             it('GetQuote - NEW & V amount & V periodtype (0)', async function () {
-                const p = Math.floor(
-                    (20000 * 250 * initials.periods[0]) / 3650000
-                );
                 await expect(
                     Mock_QuoteManager_USER_A.GetQuote(
                         Decimals18(constants._20k),
@@ -239,9 +271,6 @@ describe('Quote Manager Unit Test', function () {
                 ).to.be.revertedWith('QuoteManager: Insufficient pool funds');
             });
             it('GetQuote - NEW & V amount & V periodtype (1)', async function () {
-                const p = Math.floor(
-                    (20000 * 250 * initials.periods[1]) / 3650000
-                );
                 await expect(
                     Mock_QuoteManager_USER_A.GetQuote(
                         Decimals18(constants._20k),
@@ -250,9 +279,6 @@ describe('Quote Manager Unit Test', function () {
                 ).to.be.revertedWith('QuoteManager: Insufficient pool funds');
             });
             it('GetQuote - NEW & V amount & V periodtype (2)', async function () {
-                const p = Math.floor(
-                    (20000 * 250 * initials.periods[2]) / 3650000
-                );
                 await expect(
                     Mock_QuoteManager_USER_A.GetQuote(
                         Decimals18(constants._20k),
@@ -308,6 +334,7 @@ describe('Quote Manager Unit Test', function () {
                 'activeCoverage',
                 Decimals18(constants._1k)
             );
+            await Mock_QuoteManager.ApproveUser(user_b);
         });
 
         it('IsQuoteActive - V account & V qid & V expiry', async function () {
@@ -372,6 +399,7 @@ describe('Quote Manager Unit Test', function () {
             );
 
             Mock_QuoteManager_USER_C = Mock_QuoteManager.connect(minter_Singer);
+            await Mock_QuoteManager.ApproveUser(minter);
             await Mock_QuoteManager_USER_C.GetQuote(
                 Decimals18(constants._20k),
                 1

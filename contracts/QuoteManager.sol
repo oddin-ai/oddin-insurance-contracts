@@ -30,6 +30,8 @@ contract QuoteManager is
     uint16[3] public periods; // days
     uint16 public validDuration; // seconds ( uint16 max 18hours, uint8 max 4.267 mins)
 
+    mapping(address => bool) public whitelistBuyers;
+
     mapping(address => mapping(uint256 => Quote)) public quotes;
 
     bytes32 public constant COVER_VERIFIER = keccak256('COVER_VERIFIER');
@@ -102,6 +104,9 @@ contract QuoteManager is
         payable
         returns (uint256, uint256)
     {
+        //Get quote only for whitelisted users
+        require(IsApprovedUser(msg.sender), 'QuoteManager: User not approved');
+
         require(_amount > 0, 'QuoteManager: Insufficient amount');
         require(
             INSURANCE_POOL.CoverAvailability() >= _amount,
@@ -112,6 +117,14 @@ contract QuoteManager is
         saveQuote(_amount, _period, _premium, _qid);
         emit oddinNewQuote(msg.sender, _qid, _premium);
         return (_qid, _premium);
+    }
+
+    function ApproveUser(address user) external onlyOwner {
+        whitelistBuyers[user] = true;
+    }
+
+    function IsApprovedUser(address user) public view returns (bool) {
+        return whitelistBuyers[user] ? true : false;
     }
 
     function IsQuoteActive(address _account, uint256 _qid)

@@ -62,6 +62,21 @@ describe('Quote Manager Staging Test', function () {
         );
         Mock_fUSD = await ethers.getContract('FiatTokenV1', deployer);
     });
+    describe('Function ApproveUser', async () => {
+        let Mock_QuoteManager_USER_A: QuoteManager;
+        before(async () => {
+            Mock_QuoteManager_USER_A =
+                    Mock_QuoteManager.connect(user_a_Singer);
+        });
+        it('ApproveUser - Owner approving user a', async () => {
+            await Mock_QuoteManager.ApproveUser(user_a);
+            expect(await Mock_QuoteManager.IsApprovedUser(user_a)).to.be.eq(true);
+            expect(await Mock_QuoteManager.IsApprovedUser(user_b)).to.be.eq(false);
+        });
+        it('ApproveUser - Not Owner approving user a', async () => {
+            await expect(Mock_QuoteManager_USER_A.ApproveUser(user_a)).to.be.revertedWith('Ownable: caller is not the owner');
+        });
+    });
     describe('Function GetQuote(uint256 _amount, Periods _periodtype) external payable returns (uint256, uint256)', function () {
         let Mock_QuoteManager_USER_A: QuoteManager;
         let Mock_QuoteManager_USER_B: QuoteManager;
@@ -91,6 +106,25 @@ describe('Quote Manager Staging Test', function () {
                     Mock_QuoteManager.connect(user_a_Singer);
                 Mock_QuoteManager_USER_B =
                     Mock_QuoteManager.connect(user_b_Singer);
+                await Mock_QuoteManager.ApproveUser(user_a);
+            });
+            it('GetQuote - User is Whitelisted', async () => {
+                await expect(
+                    Mock_QuoteManager_USER_A.GetQuote(
+                        Decimals18(constants._20k),
+                        0
+                    )
+                )
+                    .to.emit(Mock_QuoteManager, 'oddinNewQuote');
+            });
+            it('GetQuote - User is NOT Whitelisted', async () => {
+                await expect(
+                    Mock_QuoteManager_USER_B.GetQuote(
+                        Decimals18(constants._20k),
+                        0
+                    )
+                )
+                .to.be.revertedWith('QuoteManager: User not approved');
             });
             it('GetQuote - NEW & V amount & V periodtype (0)', async function () {
                 const p = Math.floor(
@@ -177,6 +211,7 @@ describe('Quote Manager Staging Test', function () {
                     Mock_QuoteManager.connect(user_a_Singer);
                 Mock_QuoteManager_USER_B =
                     Mock_QuoteManager.connect(user_b_Singer);
+                await Mock_QuoteManager.ApproveUser(user_a);
             });
             it('GetQuote - NEW & V amount & V periodtype (0)', async function () {
                 const p = Math.floor(
@@ -244,6 +279,9 @@ describe('Quote Manager Staging Test', function () {
             Mock_QuoteManager_USER_B = Mock_QuoteManager.connect(user_b_Singer);
             Mock_QuoteManager_USER_A = Mock_QuoteManager.connect(user_a_Singer);
             Mock_QuoteManager_USER_C = Mock_QuoteManager.connect(minter_Singer);
+            await Mock_QuoteManager.ApproveUser(user_a_Singer.address);
+            await Mock_QuoteManager.ApproveUser(user_b_Singer.address);
+            await Mock_QuoteManager.ApproveUser(minter_Singer.address);
             await Mock_fUSD.connect(externalDeployer_Singer).configureMinter(
                 minter,
                 Decimals18(constants._1m)
@@ -331,6 +369,7 @@ describe('Quote Manager Staging Test', function () {
                 Decimals18(constants._200k)
             );
             Mock_QuoteManager_USER_C = Mock_QuoteManager.connect(minter_Singer);
+            await Mock_QuoteManager.ApproveUser(minter_Singer.address);
             await Mock_QuoteManager_USER_C.GetQuote(
                 Decimals18(constants._20k),
                 1
@@ -421,6 +460,7 @@ describe('Quote Manager Staging Test', function () {
             );
             Mock_QuoteManager_FAKE_FEEDIST =
                 Mock_QuoteManager.connect(minter_Singer);
+            await Mock_QuoteManager.ApproveUser(user_a);
             await Mock_QuoteManager_USER_A.GetQuote(
                 Decimals18(constants._20k),
                 1
@@ -535,6 +575,7 @@ describe('Quote Manager Staging Test', function () {
                 Decimals18(constants._200k)
             );
             Mock_QuoteManager_USER_A = Mock_QuoteManager.connect(user_a_Singer);
+            await Mock_QuoteManager.ApproveUser(user_a);
             Mock_FeeDistribution = await ethers.getContract(
                 'FeeDistribution',
                 deployer

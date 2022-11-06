@@ -245,7 +245,7 @@ import initials from '../../helpers/deploy-initials';
                   );
                   Mock_InsurancePool.setCoverManager(
                       Mock_FeeDistribution.address
-                  );
+                  );                  
               });
               it('Emits event CoverVerified', async () => {
                   const accounts = await ethers.getSigners();
@@ -259,6 +259,7 @@ import initials from '../../helpers/deploy-initials';
 
                   const Mock_QuoteManager_USER_A =
                       Mock_QuoteManager.connect(workingAccount);
+                      await Mock_QuoteManager.ApproveUser(workingAccount.address);
                   const txResponse = await Mock_QuoteManager_USER_A.GetQuote(
                       Decimals18(constants._2k),
                       0

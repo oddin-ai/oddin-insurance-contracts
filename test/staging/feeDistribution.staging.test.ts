@@ -204,6 +204,7 @@ import {
 
                   const Mock_QuoteManager_USER_A =
                       manager.connect(workingAccount);
+                    await manager.ApproveUser(workingAccount.address);
                   const txResponse = await Mock_QuoteManager_USER_A.GetQuote(
                       Decimals18(constants._2k),
                       0
