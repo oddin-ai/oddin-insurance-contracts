@@ -8,6 +8,8 @@ interface IQuoteManager {
         payable
         returns (uint256, uint256);
 
+    function IsApprovedUser(address user) external view returns (bool);
+
     function IsQuoteActive(address _account, uint256 _qid)
         external
         view

@@ -25,7 +25,9 @@ import {
 } from '@nomicfoundation/hardhat-network-helpers';
 import { MockContract, smock } from '@defi-wonderland/smock';
 import { assert } from 'console';
+import { developmentChains } from '../../helper-hardhat-config';
 
+!developmentChains.includes(network.name)? describe.skip :
 describe('Quote Manager Unit Test', function () {
     // set-up
     let deployer: string;
@@ -47,7 +49,7 @@ describe('Quote Manager Unit Test', function () {
     const funds: { [key: string]: BigNumberish } = {};
 
     before(async () => {
-        await network.provider.send('hardhat_reset');
+     //   await network.provider.send('hardhat_reset');
         const namedAccounts = await getNamedAccounts();
         externalDeployer_Singer = await ethers.getSigner(
             namedAccounts.externalDeployer
@@ -108,15 +110,16 @@ describe('Quote Manager Unit Test', function () {
         );
 
         const Mock_FeeDistribution_Factory =
-            await smock.mock<FeeDistribution__factory>('FeeDistribution');
-        Mock_FeeDistribution = await Mock_FeeDistribution_Factory.connect(
-            deployer_Singer
-        ).deploy(
-            Mock_fUSD.address,
-            Mock_InsurancePool.address,
-            Mock_QuoteManager.address,
-            ethers.utils.parseUnits('16000', 'gwei')
-        );
+                  await smock.mock<FeeDistribution__factory>('FeeDistribution');
+              Mock_FeeDistribution = await Mock_FeeDistribution_Factory.connect(
+                  deployer_Singer
+              ).deploy();
+              await Mock_FeeDistribution.connect(deployer_Singer).initialize(
+                Mock_fUSD.address,
+                Mock_InsurancePool.address,
+                Mock_QuoteManager.address,
+                ethers.utils.parseUnits('16000', 'gwei')            
+              );
     });
     describe('Function ApproveUser', async () => {
         let Mock_QuoteManager_USER_A: MockContract<QuoteManager>;

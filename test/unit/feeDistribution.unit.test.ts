@@ -19,9 +19,9 @@ import {
 } from './../../typechain-types';
 import initials from '../../helpers/deploy-initials';
 
-!developmentChains.includes(network.name)
-    ? describe.skip
-    : describe('FeeDistribution Unit tests', async () => {
+
+!developmentChains.includes(network.name)? describe.skip :
+    describe('FeeDistribution Unit tests', async () => {
           let Mock_FeeDistribution: MockContract<FeeDistribution>;
           let Mock_fUSD: MockContract<FiatTokenV1>;
           let Mock_InsurancePool: MockContract<InsurancePool>;
@@ -38,7 +38,7 @@ import initials from '../../helpers/deploy-initials';
           const funds: { [key: string]: BigNumberish } = {};
 
           before(async () => {
-              await network.provider.send('hardhat_reset');
+            //  await network.provider.send('hardhat_reset');
               const namgedAccounts = await getNamedAccounts();
               deployer = namgedAccounts.deployer;
               externalDeployer = namgedAccounts.externalDeployer;
@@ -99,11 +99,12 @@ import initials from '../../helpers/deploy-initials';
                   await smock.mock<FeeDistribution__factory>('FeeDistribution');
               Mock_FeeDistribution = await Mock_FeeDistribution_Factory.connect(
                   deployer_Singer
-              ).deploy(
-                  Mock_fUSD.address,
-                  Mock_InsurancePool.address,
-                  Mock_QuoteManager.address,
-                  ethers.utils.parseUnits('16000', 'gwei')
+              ).deploy();
+              await Mock_FeeDistribution.connect(deployer_Singer).initialize(
+                Mock_fUSD.address,
+                Mock_InsurancePool.address,
+                Mock_QuoteManager.address,
+                ethers.utils.parseUnits('16000', 'gwei')            
               );
 
               balances[Mock_FeeDistribution.address] = Decimals18(
@@ -163,6 +164,7 @@ import initials from '../../helpers/deploy-initials';
                   balances[Mock_InsurancePool.address] = Decimals18(
                       constants._1k
                   );
+                  
                   await Mock_fUSD.setVariable('balances', balances);
 
                   await Mock_InsurancePool.setVariable(
@@ -205,26 +207,39 @@ import initials from '../../helpers/deploy-initials';
                   );
               });
 
-              it('Address has no share in pool', async () => {
-                  const noShareAccount = accounts[7];
-                  const feesConnectedContract =
-                      await Mock_FeeDistribution.connect(noShareAccount);
-                  const startBalance = await Mock_fUSD.balanceOf(
-                      noShareAccount.address
-                  );
-                  expect(startBalance).to.be.eq(0);
-                  await expect(
-                      feesConnectedContract.claim()
-                  ).to.be.revertedWith('Claim: user has no share in pool');
-                  //   const txResponse = await feesConnectedContract.claim();
-                  //   await txResponse.wait(1);
-                  //   const endBalance = await Mock_fUSD.balanceOf(
-                  //       noShareAccount.address
-                  //   );
-                  //   expect(endBalance).to.be.eq(
-                  //       ethers.utils.parseUnits('0', 'ether')
-                  //   );
-              });
+                it('Address has no share in pool', async () => {
+                    const noShareAccount = accounts[7];
+                    const feesConnectedContract =
+                        await Mock_FeeDistribution.connect(noShareAccount);
+                    const startBalance = await Mock_fUSD.balanceOf(
+                        noShareAccount.address
+                    );
+                    expect(startBalance).to.be.eq(0);
+                    await expect(
+                        feesConnectedContract.claim()
+                    ).to.be.revertedWithCustomError(feesConnectedContract,"NotPartOfThePool");//.revertedWith('Claim: user has no share in pool');
+                    //   const txResponse = await feesConnectedContract.claim();
+                    //   await txResponse.wait(1);
+                    //   const endBalance = await Mock_fUSD.balanceOf(
+                    //       noShareAccount.address
+                    //   );
+                    //   expect(endBalance).to.be.eq(
+                    //       ethers.utils.parseUnits('0', 'ether')
+                    //   );
+                });
+                it('Address has no sufficient amount', async () => {
+                    balances[Mock_FeeDistribution.address] = Decimals18(
+                        constants._10
+                    );
+                    await Mock_fUSD.setVariable('balances', balances);
+                    const feesConnectedContract =
+                      await Mock_FeeDistribution.connect(workingAccount);
+                    expect(startBalance).to.be.eq(0);
+                    // advance time by ten hours and mine a new block
+                    await time.increase(3599400);
+
+                    await expect(feesConnectedContract.claim()).to.be.revertedWithCustomError(feesConnectedContract,"InsufficientBalance");
+                });
           });
 
           describe('verifyCover', async () => {
@@ -288,6 +303,30 @@ import initials from '../../helpers/deploy-initials';
                       .to.emit(feesConnectedContract, 'CoverVerified')
                       .withArgs(workingAccount.address);
               });
+                it('Cover Not Verified becasue cover is not active',async () => {
+                    const accounts = await ethers.getSigners();
+                    const workingAccount = accounts[6];
+  
+                    const feesConnectedContract =
+                        await Mock_FeeDistribution.connect(workingAccount);
+  
+                    balances[workingAccount.address] = Decimals18(constants._1k);
+                    await Mock_fUSD.setVariable('balances', balances);
+  
+                    const Mock_QuoteManager_USER_A =
+                        Mock_QuoteManager.connect(workingAccount);
+                        await Mock_QuoteManager.ApproveUser(workingAccount.address);
+                    const txResponse = await Mock_QuoteManager_USER_A.GetQuote(
+                        Decimals18(constants._2k),
+                        0
+                    );
+                    await time.increase(3599400);
+  
+                    await expect(
+                        feesConnectedContract.VerifyCover(123, Decimals18(constants._10))
+                    )
+                        .to.be.revertedWithCustomError(feesConnectedContract,"CoverNotActive");                        
+                });
           });
 
           describe('transferOwnership', async () => {

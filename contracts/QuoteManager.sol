@@ -4,6 +4,7 @@ pragma solidity ^0.8.16;
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol';
@@ -13,12 +14,17 @@ import './interfaces/IQuoteManager.sol';
 import './interfaces/IInsurancePool.sol';
 import 'hardhat/console.sol';
 
+/** @title - QuoteManager contract is tracing all active and inactive covers.
+ * @notice - During Beta we'll whitelist every user that wants to buy a cover.
+ * @notice - we use checkpoints to track all the coverage changes of every user.
+ */
 contract QuoteManager is
     IQuoteManager,
     Initializable,
     OwnableUpgradeable,
     AccessControlUpgradeable,
     ReentrancyGuardUpgradeable,
+    PausableUpgradeable,
     UUPSUpgradeable
 {
     // Type declarations:
@@ -72,6 +78,7 @@ contract QuoteManager is
         // add initializers/constructors of parent libraries
         __Ownable_init();
         __ReentrancyGuard_init();
+        __Pausable_init();
         __UUPSUpgradeable_init();
         __AccessControl_init();
         _grantRole(DEFAULT_ADMIN_ROLE, owner());
@@ -99,12 +106,13 @@ contract QuoteManager is
     fallback() external payable {}
 
     //// external
+    /** @notice - GetQuote is calculating the premium for the coverage amount and duration of the cover */
     function GetQuote(uint256 _amount, Periods _periodtype)
         external
         payable
         returns (uint256, uint256)
     {
-        //Get quote only for whitelisted users
+        //  Get quote only for whitelisted users
         require(IsApprovedUser(msg.sender), 'QuoteManager: User not approved');
 
         require(_amount > 0, 'QuoteManager: Insufficient amount');
@@ -119,6 +127,7 @@ contract QuoteManager is
         return (_qid, _premium);
     }
 
+    /** @notice - function used by admin to approve new users */
     function ApproveUser(address user) external onlyOwner {
         whitelistBuyers[user] = true;
     }
@@ -132,16 +141,18 @@ contract QuoteManager is
         view
         returns (bool, CoverDetails memory)
     {
+        console.log('Entered IsQuoteQctive');
         Quote memory _q = quotes[_account][_qid];
         require(
             _q.cover.balance > 0,
             'QuoteManager: No Quotes with given address/QID'
         );
-
+        console.log('Entered IsQuoteQctive ', _q.cover.balance, _q.expiry);
         bool _valid;
         if (_q.expiry > block.timestamp) {
             _valid = true;
         }
+        console.log('Entered IsQuoteQctive before return...');
         return (_valid, _q.cover);
     }
 
@@ -159,6 +170,7 @@ contract QuoteManager is
         return quotes[_account][_qid];
     }
 
+    /** notice - verify cover terms used by coverVerify function in the FeeDistribution contract */
     function Verify(address _account, uint256 _qid)
         external
         onlyRole(COVER_VERIFIER)
@@ -198,6 +210,7 @@ contract QuoteManager is
     // }
 
     //// internal
+    /** @notice - saves new quote, before verification and payment */
     function saveQuote(
         uint256 _amount,
         uint16 _period,
@@ -260,6 +273,7 @@ contract QuoteManager is
         return uint32(n);
     }
 
+    /** @notice - a checkpoint represents every change in the coverage of a user */
     function writeCheckpoint(
         address delegatee,
         uint32 nCheckpoints,

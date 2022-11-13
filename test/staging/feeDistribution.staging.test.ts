@@ -13,9 +13,8 @@ import {
     QuoteManager,
 } from './../../typechain-types';
 
-!developmentChains.includes(network.name)
-    ? describe.skip
-    : describe('FeeDistribution Staging tests', async () => {
+developmentChains.includes(network.name)? describe.skip :
+describe('FeeDistribution Staging tests', async () => {
           let distributer: FeeDistribution;
           let mockFeesToken: FiatTokenV1;
           let insurancePool: InsurancePool;
@@ -25,12 +24,12 @@ import {
           let externalDeployer: string;
 
           before(async () => {
-              await network.provider.send('hardhat_reset');
+          //    await network.provider.send('hardhat_reset');  // should run only on development networks
               const namgedAccounts = await getNamedAccounts();
               deployer = namgedAccounts.deployer;
               externalDeployer = namgedAccounts.externalDeployer;
               minter = namgedAccounts.externalAdmin;
-              await deployments.fixture(['all']);
+              await deployments.fixture(['all']);   // should run only on development networks
               distributer = await ethers.getContract(
                   'FeeDistribution',
                   deployer
@@ -173,7 +172,7 @@ import {
 
           describe('verifyCover', async () => {
               before(async () => {
-                  await deployments.fixture(['all']);
+          //        await deployments.fixture(['all']);
                   await mockFeesToken
                       .connect(await ethers.getSigner(externalDeployer))
                       .configureMinter(minter, Decimals18(constants._1m));

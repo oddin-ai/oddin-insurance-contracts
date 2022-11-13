@@ -17,13 +17,13 @@ const deployMocks: DeployFunction = async function (
     const DEPLOY_CONTRACT = 'FiatTokenV1';
     // If we are on a local development network, we need to deploy mocks!
     if (chainId == 31337) {
-        log('Local network detected! Deploying mocks...');
-        await deploy('FUSDDToken', {
-            contract: 'FUSDDToken',
-            from: externalDeployer,
-            log: true,
-            args: [INITIAL_SUPPLY],
-        });
+        // log('Local network detected! Deploying mocks...');
+        // await deploy('FUSDDToken', {
+        //     contract: 'FUSDDToken',
+        //     from: externalDeployer,
+        //     log: true,
+        //     args: [INITIAL_SUPPLY],
+        // });
 
         // *--- FiatTokenV1 ---*
         // function initialize(

@@ -11,6 +11,7 @@ import constants from '../../helpers/constants';
 import { Decimals18 } from '../../helpers/functions';
 import { increase } from '@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time';
 import initials from '../../helpers/deploy-initials';
+import { developmentChains } from '../../helper-hardhat-config';
 import { BigNumber } from 'ethers';
 import {
     impersonateAccount,
@@ -20,6 +21,7 @@ import {
     mine,
 } from '@nomicfoundation/hardhat-network-helpers';
 
+developmentChains.includes(network.name)? describe.skip :
 describe('Quote Manager Staging Test', function () {
     // set-up
     let accounts;
@@ -38,7 +40,7 @@ describe('Quote Manager Staging Test', function () {
     let Mock_fUSD: FiatTokenV1;
     let Mock_InsurancePool: InsurancePool;
     before(async () => {
-        await network.provider.send('hardhat_reset');
+     //   await network.provider.send('hardhat_reset');
         const namedAccounts = await getNamedAccounts();
         externalDeployer_Singer = await ethers.getSigner(
             namedAccounts.externalDeployer

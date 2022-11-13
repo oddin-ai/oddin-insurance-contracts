@@ -7,7 +7,7 @@ import initials from '../helpers/deploy-initials';
 const deployQuoteManager = async (hre: HardhatRuntimeEnvironment) => {
     const { getNamedAccounts, deployments, upgrades, ethers } = hre;
     const { deployProxy } = upgrades;
-    const { getContractFactory } = ethers;
+    const { getContractFactory, getContract } = ethers;
     const { deployer, externalDeployer } = await getNamedAccounts();
     const chainId = network.config.chainId;
     const DEPLOY_CONTRACT = 'QuoteManager';
@@ -19,12 +19,12 @@ const deployQuoteManager = async (hre: HardhatRuntimeEnvironment) => {
         network.name !== undefined &&
         developmentChains.includes(network.name)
     ) {
-        // fusd = (await deployments.get('FiatTokenV1')).address;
+        fusd = (await deployments.get('FiatTokenV1')).address;
         insurancepool = (await deployments.get('InsurancePool')).address;
     } else {
         if (chainId) {
-            // fusd = null; // this is for now, need to see how to do on-chain testing
-            insurancepool = null;
+            fusd = networkConfig[chainId].nativeStable; 
+            insurancepool = (await getContract('InsurancePool', deployer)).address;
         }
     }
 
