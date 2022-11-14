@@ -219,12 +219,13 @@ describe('FeeDistribution Staging tests', async () => {
                               : 0
                           : 0
                       : 0;
+                    const premiumId = premiumLog ? (premiumLog.length > 0 ? (premiumLog[0].args ? premiumLog[0].args[1] : 0) : 0) : 0
                   await mockFeesToken
                       .connect(workingAccount)
                       .approve(distributer.address, Decimals18(constants._10k));
 
                   await expect(
-                      feesConnectedContract.VerifyCover(123, premiumAmount)
+                      feesConnectedContract.VerifyCover(premiumId, premiumAmount)
                   )
                       .to.emit(feesConnectedContract, 'CoverVerified')
                       .withArgs(workingAccount.address);

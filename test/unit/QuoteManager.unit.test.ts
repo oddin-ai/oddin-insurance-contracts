@@ -106,7 +106,8 @@ describe('Quote Manager Unit Test', function () {
         await Mock_QuoteManager.connect(deployer_Singer).initialize(
             periods,
             validDuration,
-            Mock_InsurancePool.address
+            Mock_InsurancePool.address,
+            0
         );
 
         const Mock_FeeDistribution_Factory =
@@ -193,8 +194,7 @@ describe('Quote Manager Unit Test', function () {
                         0
                     )
                 )
-                    .to.emit(Mock_QuoteManager, 'oddinNewQuote')
-                    .withArgs(user_a, 123, p);
+                    .to.emit(Mock_QuoteManager, 'oddinNewQuote');
             });
             it('GetQuote - NEW & V amount & V periodtype (1)', async function () {
                 const p = Math.floor(
@@ -206,8 +206,7 @@ describe('Quote Manager Unit Test', function () {
                         1
                     )
                 )
-                    .to.emit(Mock_QuoteManager, 'oddinNewQuote')
-                    .withArgs(user_a, 123, p);
+                    .to.emit(Mock_QuoteManager, 'oddinNewQuote');
             });
             it('GetQuote - NEW & V amount & V periodtype (2)', async function () {
                 const p = Math.floor(
@@ -219,8 +218,7 @@ describe('Quote Manager Unit Test', function () {
                         2
                     )
                 )
-                    .to.emit(Mock_QuoteManager, 'oddinNewQuote')
-                    .withArgs(user_a, 123, p);
+                    .to.emit(Mock_QuoteManager, 'oddinNewQuote');
             });
             it('GetQuote - NEW & X amount & V periodtype', async function () {
                 await expect(
@@ -338,36 +336,47 @@ describe('Quote Manager Unit Test', function () {
                 Decimals18(constants._1k)
             );
             await Mock_QuoteManager.ApproveUser(user_b);
+            await Mock_QuoteManager.ApproveUser(user_a);
         });
 
         it('IsQuoteActive - V account & V qid & V expiry', async function () {
-            await Mock_QuoteManager_USER_B.GetQuote(
+            const txResponse = await Mock_QuoteManager_USER_B.GetQuote(
                 Decimals18(constants._20k),
                 2
             );
+            const txReceipt = await txResponse.wait();
+            const premiumLog = txReceipt.events?.filter((x) => {
+                return x.event == 'oddinNewQuote';
+            });
+            const premiumId = premiumLog ? (premiumLog.length > 0 ? (premiumLog[0].args ? premiumLog[0].args[1] : 0) : 0) : 0
             await increase(initials.validDuration - 1);
             const res = await Mock_QuoteManager_USER_B.IsQuoteActive(
                 user_b,
-                123
+                premiumId
             );
             expect(res[0]).to.be.eq(true);
         });
 
         it('IsQuoteActive - V account & V qid & X expiry', async function () {
-            await Mock_QuoteManager_USER_A.GetQuote(
+            const txResponse = await Mock_QuoteManager_USER_A.GetQuote(
                 Decimals18(constants._20k),
                 2
             );
+            const txReceipt = await txResponse.wait();
+            const premiumLog = txReceipt.events?.filter((x) => {
+                return x.event == 'oddinNewQuote';
+            });
+            const premiumId = premiumLog ? (premiumLog.length > 0 ? (premiumLog[0].args ? premiumLog[0].args[1] : 0) : 0) : 0
             await increase(initials.validDuration + 1);
             const res = await Mock_QuoteManager_USER_A.IsQuoteActive(
                 user_b,
-                123
+                premiumId
             );
             expect(res[0]).to.be.eq(false);
         });
         it('IsQuoteActive - X account & V qid & - expiry', async function () {
             await expect(
-                Mock_QuoteManager_USER_C.IsQuoteActive(externalDeployer, 123)
+                Mock_QuoteManager_USER_C.IsQuoteActive(externalDeployer, 1)
             ).to.revertedWith('QuoteManager: No Quotes with given address/QID');
         });
         it('IsQuoteActive - V account & X qid & - expiry', async function () {
@@ -384,6 +393,7 @@ describe('Quote Manager Unit Test', function () {
 
     describe('Function GetQuoteData external view returns (Quote memory)', function () {
         let Mock_QuoteManager_USER_C: MockContract<QuoteManager>;
+        let premiumId: any;
         before(async () => {
             funds[user_a] = Decimals18(constants._200k);
             await Mock_InsurancePool.setVariable('funds', funds);
@@ -403,15 +413,20 @@ describe('Quote Manager Unit Test', function () {
 
             Mock_QuoteManager_USER_C = Mock_QuoteManager.connect(minter_Singer);
             await Mock_QuoteManager.ApproveUser(minter);
-            await Mock_QuoteManager_USER_C.GetQuote(
+            const txResponse = await Mock_QuoteManager_USER_C.GetQuote(
                 Decimals18(constants._20k),
                 1
             );
+            const txReceipt = await txResponse.wait();
+            const premiumLog = txReceipt.events?.filter((x) => {
+                return x.event == 'oddinNewQuote';
+            });
+            premiumId = premiumLog ? (premiumLog.length > 0 ? (premiumLog[0].args ? premiumLog[0].args[1] : 0) : 0) : 0
         });
         it('GetQuoteData - V account & V qid', async function () {
             const [res] = await Mock_QuoteManager_USER_C.GetQuoteData(
                 minter,
-                123
+                premiumId
             );
 
             expect(res.balance).to.be.eq(
@@ -431,7 +446,7 @@ describe('Quote Manager Unit Test', function () {
         });
         it('GetQuoteData - X account & V qid', async function () {
             await expect(
-                Mock_QuoteManager_USER_C.GetQuoteData(externalDeployer, 123)
+                Mock_QuoteManager_USER_C.GetQuoteData(externalDeployer, 1)
             ).to.revertedWith('QuoteManager: No Quotes with given address/QID');
         });
         it('GetQuoteData - V account & X qid', async function () {
@@ -450,6 +465,7 @@ describe('Quote Manager Unit Test', function () {
         let Mock_QuoteManager_USER_A: MockContract<QuoteManager>;
         let Mock_QuoteManager_FEEDIST: MockContract<QuoteManager>;
         let Mock_QuoteManager_FAKE_FEEDIST: MockContract<QuoteManager>;
+        let premiumId: any;
         before(async () => {
             funds[user_a] = Decimals18(constants._200k);
             await Mock_InsurancePool.setVariable('funds', funds);
@@ -487,18 +503,23 @@ describe('Quote Manager Unit Test', function () {
             );
             Mock_QuoteManager_FAKE_FEEDIST =
                 Mock_QuoteManager.connect(minter_Singer);
-            await Mock_QuoteManager_USER_A.GetQuote(
+            const txResponse = await Mock_QuoteManager_USER_A.GetQuote(
                 Decimals18(constants._20k),
                 1
             );
+            const txReceipt = await txResponse.wait();
+            const premiumLog = txReceipt.events?.filter((x) => {
+                return x.event == 'oddinNewQuote';
+            });
+            premiumId = premiumLog ? (premiumLog.length > 0 ? (premiumLog[0].args ? premiumLog[0].args[1] : 0) : 0) : 0
         });
         after(async () => {
             await stopImpersonatingAccount(Mock_FeeDistribution.address);
         });
         it('Verify - V COVER_VERIFIER & V account & V qid', async function () {
-            await expect(Mock_QuoteManager_FEEDIST.Verify(user_a, 123))
+            await expect(Mock_QuoteManager_FEEDIST.Verify(user_a, premiumId))
                 .to.emit(Mock_QuoteManager, 'QuoteVerified')
-                .withArgs(user_a, 123)
+                .withArgs(user_a, premiumId)
                 .to.emit(Mock_QuoteManager, 'DelegateAmountChanged')
                 .withArgs(user_a, 0, Decimals18(constants._20k));
         });
@@ -511,7 +532,7 @@ describe('Quote Manager Unit Test', function () {
 
         it('Verify - V COVER_VERIFIER & X account & V qid', async function () {
             await expect(
-                Mock_QuoteManager_FEEDIST.Verify(externalDeployer, 123)
+                Mock_QuoteManager_FEEDIST.Verify(externalDeployer,premiumId)
             ).to.be.revertedWith(
                 'QuoteManager: No Quotes with given address/QID'
             );
@@ -532,14 +553,14 @@ describe('Quote Manager Unit Test', function () {
         });
         it('Verify - X COVER_VERIFIER & V account & V qid', async function () {
             await expect(
-                Mock_QuoteManager_FAKE_FEEDIST.Verify(user_a, 123)
+                Mock_QuoteManager_FAKE_FEEDIST.Verify(user_a, premiumId)
             ).to.be.revertedWith(
                 `AccessControl: account ${minter.toLowerCase()} is missing role ${await Mock_QuoteManager.COVER_VERIFIER()}`
             );
         });
         it('Verify - X COVER_VERIFIER & X account & V qid', async function () {
             await expect(
-                Mock_QuoteManager_FAKE_FEEDIST.Verify(externalDeployer, 123)
+                Mock_QuoteManager_FAKE_FEEDIST.Verify(externalDeployer, premiumId)
             ).to.be.revertedWith(
                 `AccessControl: account ${minter.toLowerCase()} is missing role ${await Mock_QuoteManager.COVER_VERIFIER()}`
             );
@@ -650,7 +671,7 @@ describe('Quote Manager Unit Test', function () {
                 Decimals18(constants._20k),
                 1
             );
-            await Mock_QuoteManager_FEEDIST.Verify(user_a, 123);
+            await Mock_QuoteManager_FEEDIST.Verify(user_a, 1);
 
             // act
             const resMinus1 = await Mock_QuoteManager_USER_A.getPriorCover(
@@ -667,6 +688,9 @@ describe('Quote Manager Unit Test', function () {
             expect(res).to.be.eq(Decimals18(constants._20k));
         });
     });
+
+
+    
     // describe('Function setPoolVerifier(address _cv) public onlyOwner onlyRole(DEFAULT_ADMIN_ROLE)', function () {
     //     let Mock_QuoteManager_USER_A: QuoteManager;
     //     let Mock_QuoteManager_OWNER: QuoteManager;

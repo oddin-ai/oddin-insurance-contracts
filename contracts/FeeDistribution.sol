@@ -144,17 +144,12 @@ contract FeeDistribution is
         feesToken.safeTransfer(msg.sender, userAmount);
     }
 
-    function VerifyCover(uint256 _qid, uint256 _premiumAmount)
+    function VerifyCover(uint256 qid, uint256 _premiumAmount)
         external
         payable
         nonReentrant
     {
-        require(
-            INSURANCE_POOL.CoverAvailability() >= _premiumAmount,
-            'QuoteManager: Insufficient pool funds'
-        );
-        console.log('before checking active quote with %s', _qid);
-        try quoteManager.IsQuoteActive(msg.sender, _qid) returns (
+        try quoteManager.IsQuoteActive(msg.sender, qid) returns (
             bool active,
             CoverDetails memory cd
         ) {
@@ -166,11 +161,9 @@ contract FeeDistribution is
             if (_premiumAmount < _premium) {
                 revert CoverFeeAmountNotSufficiant();
             }
-            console.log('premium to pay: %s', _premium);
             feesToken.safeTransferFrom(msg.sender, address(this), _premium);
-            console.log('we passed safeTransferFrom with %s', _qid);
-            quoteManager.Verify(msg.sender, _qid);
-            INSURANCE_POOL.updateActiveCoverage(true, _premium);
+            quoteManager.Verify(msg.sender, qid);
+            INSURANCE_POOL.updateActiveCoverage(true, cd.balance);
             emit CoverVerified(msg.sender);
         } catch Error(string memory err) {
             console.log('Error catch ${err}', err);

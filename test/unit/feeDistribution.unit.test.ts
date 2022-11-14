@@ -1,7 +1,7 @@
 import { MockContract, smock } from '@defi-wonderland/smock';
 import { time } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { expect } from 'chai';
+import { expect, assert } from 'chai';
 import { BigNumber, BigNumberish } from 'ethers';
 import { deployments, ethers, getNamedAccounts, network } from 'hardhat';
 import { developmentChains } from '../../helper-hardhat-config';
@@ -18,6 +18,7 @@ import {
     QuoteManager__factory,
 } from './../../typechain-types';
 import initials from '../../helpers/deploy-initials';
+import deployInsurancePool from '../../deploy/01-deploy-insurance-pool';
 
 
 !developmentChains.includes(network.name)? describe.skip :
@@ -92,7 +93,8 @@ import initials from '../../helpers/deploy-initials';
               await Mock_QuoteManager.connect(deployer_Singer).initialize(
                   periods,
                   validDuration,
-                  Mock_InsurancePool.address
+                  Mock_InsurancePool.address,
+                  0
               );
 
               const Mock_FeeDistribution_Factory =
@@ -290,18 +292,21 @@ import initials from '../../helpers/deploy-initials';
                               : 0
                           : 0
                       : 0;
+                      const premiumId = premiumLog ? (premiumLog.length > 0 ? (premiumLog[0].args ? premiumLog[0].args[1] : 0) : 0) : 0
                   allowed[workingAccount.address] = {};
                   allowed[workingAccount.address][
                       Mock_FeeDistribution.address
                   ] = Decimals18(constants._10k);
 
                   await Mock_fUSD.setVariable('allowed', allowed);
-
+                  let beforeActiveCover = await Mock_InsurancePool.CoverAvailability();
                   await expect(
-                      feesConnectedContract.VerifyCover(123, premiumAmount)
+                      feesConnectedContract.VerifyCover(premiumId, premiumAmount)
                   )
                       .to.emit(feesConnectedContract, 'CoverVerified')
                       .withArgs(workingAccount.address);
+                    let afterActiveCover = await Mock_InsurancePool.CoverAvailability();
+                    assert.equal(afterActiveCover.add(Decimals18(constants._2k)).eq(beforeActiveCover),true);
               });
                 it('Cover Not Verified becasue cover is not active',async () => {
                     const accounts = await ethers.getSigners();
@@ -320,12 +325,47 @@ import initials from '../../helpers/deploy-initials';
                         Decimals18(constants._2k),
                         0
                     );
+                    const txReceipt = await txResponse.wait()
+                    const premiumLog = txReceipt.events?.filter((x) => {
+                        return x.event == 'oddinNewQuote';
+                    });
+                    const premiumId = premiumLog ? (premiumLog.length > 0 ? (premiumLog[0].args ? premiumLog[0].args[1] : 0) : 0) : 0
                     await time.increase(3599400);
-  
                     await expect(
-                        feesConnectedContract.VerifyCover(123, Decimals18(constants._10))
-                    )
-                        .to.be.revertedWithCustomError(feesConnectedContract,"CoverNotActive");                        
+                        feesConnectedContract.VerifyCover(premiumId, Decimals18(constants._10))
+                    ).to.be.revertedWithCustomError(feesConnectedContract,"CoverNotActive");                    
+                });
+                it('Cover Not Verified becasue CoverFeeAmountNotSufficiant',async () => {
+                    const accounts = await ethers.getSigners();
+                    const workingAccount = accounts[6];
+  
+                    const feesConnectedContract =
+                        await Mock_FeeDistribution.connect(workingAccount);
+  
+                    balances[workingAccount.address] = Decimals18(constants._1k);
+                    await Mock_fUSD.setVariable('balances', balances);
+  
+                    const Mock_QuoteManager_USER_A =
+                        Mock_QuoteManager.connect(workingAccount);
+                        await Mock_QuoteManager.ApproveUser(workingAccount.address);
+                    const txResponse = await Mock_QuoteManager_USER_A.GetQuote(
+                        Decimals18(constants._2k),
+                        0
+                    );                   
+                    const txReceipt = await txResponse.wait()
+                    const premiumLog = txReceipt.events?.filter((x) => {
+                        return x.event == 'oddinNewQuote';
+                    });
+                    const premiumAmount = premiumLog? premiumLog.length > 0 ? premiumLog[0].args? premiumLog[0].args[2]: 0 : 0: 0;
+                    const premiumId = premiumLog ? (premiumLog.length > 0 ? (premiumLog[0].args ? premiumLog[0].args[1] : 0) : 0) : 0;
+                    allowed[workingAccount.address] = {};
+                    allowed[workingAccount.address][
+                      Mock_FeeDistribution.address
+                  ] = Decimals18(constants._2k);
+                  await Mock_fUSD.setVariable('allowed', allowed);
+                    await expect(
+                        feesConnectedContract.VerifyCover(premiumId, Decimals18("1"))
+                    ).to.be.revertedWithCustomError(feesConnectedContract,"CoverFeeAmountNotSufficiant");                    
                 });
           });
 

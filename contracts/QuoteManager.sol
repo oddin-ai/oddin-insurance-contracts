@@ -9,6 +9,7 @@ import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
+//import '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
 // import './types/TQuoteManager.sol';
 import './interfaces/IQuoteManager.sol';
 import './interfaces/IInsurancePool.sol';
@@ -33,6 +34,7 @@ contract QuoteManager is
     // ------- ^ Type declarations ^ -------
 
     // State variables:
+    uint256 public _qid;
     uint16[3] public periods; // days
     uint16 public validDuration; // seconds ( uint16 max 18hours, uint8 max 4.267 mins)
 
@@ -73,7 +75,8 @@ contract QuoteManager is
     function initialize(
         uint16[3] memory _periods,
         uint16 _validDuration,
-        address _insurancePool
+        address _insurancePool,
+        uint256 quoteInit
     ) public initializer {
         // add initializers/constructors of parent libraries
         __Ownable_init();
@@ -93,6 +96,7 @@ contract QuoteManager is
         periods = _periods;
         validDuration = _validDuration;
         INSURANCE_POOL = IInsurancePool(_insurancePool);
+        _qid = quoteInit;
     }
 
     // ------- ^ Initiation ^ -------
@@ -121,10 +125,10 @@ contract QuoteManager is
             'QuoteManager: Insufficient pool funds'
         );
         uint16 _period = getPeriod(_periodtype);
-        (uint256 _qid, uint256 _premium) = calculatePremium(_amount, _period);
-        saveQuote(_amount, _period, _premium, _qid);
-        emit oddinNewQuote(msg.sender, _qid, _premium);
-        return (_qid, _premium);
+        (uint256 qid, uint256 _premium) = calculatePremium(_amount, _period);
+        saveQuote(_amount, _period, _premium, qid);
+        emit oddinNewQuote(msg.sender, qid, _premium);
+        return (qid, _premium);
     }
 
     /** @notice - function used by admin to approve new users */
@@ -136,42 +140,39 @@ contract QuoteManager is
         return whitelistBuyers[user] ? true : false;
     }
 
-    function IsQuoteActive(address _account, uint256 _qid)
+    function IsQuoteActive(address _account, uint256 qid)
         external
         view
         returns (bool, CoverDetails memory)
     {
-        console.log('Entered IsQuoteQctive');
-        Quote memory _q = quotes[_account][_qid];
+        Quote memory _q = quotes[_account][qid];
         require(
             _q.cover.balance > 0,
             'QuoteManager: No Quotes with given address/QID'
         );
-        console.log('Entered IsQuoteQctive ', _q.cover.balance, _q.expiry);
         bool _valid;
         if (_q.expiry > block.timestamp) {
             _valid = true;
         }
-        console.log('Entered IsQuoteQctive before return...');
         return (_valid, _q.cover);
     }
 
-    function GetQuoteData(address _account, uint256 _qid)
+    function GetQuoteData(address _account, uint256 qid)
         external
         view
         returns (Quote memory)
     {
-        Quote memory _q = quotes[_account][_qid];
+        Quote memory _q = quotes[_account][qid];
 
         require(
             _q.expiry > 0,
             'QuoteManager: No Quotes with given address/QID'
         );
-        return quotes[_account][_qid];
+        return quotes[_account][qid];
     }
 
     /** notice - verify cover terms used by coverVerify function in the FeeDistribution contract */
-    function Verify(address _account, uint256 _qid)
+    function Verify(address _account, uint256 qid)
         external
         onlyRole(COVER_VERIFIER)
     {
@@ -179,16 +180,17 @@ contract QuoteManager is
             hasRole(COVER_VERIFIER, msg.sender),
             'QuoteManager: NOT Authorized to verify'
         );
-        Quote memory _q = quotes[_account][_qid];
+        Quote memory _q = quotes[_account][qid];
         require(
             _q.expiry > 0,
             'QuoteManager: No Quotes with given address/QID'
         );
         require(_q.verified != true, 'QuoteManager: Quote already verified');
         _q.verified = true;
-        quotes[_account][_qid] = _q;
+        quotes[_account][qid] = _q;
         writeCheckpoint(_account, 1, 0, _q.cover.balance);
-        emit QuoteVerified(_account, _qid);
+        incrementQuote();
+        emit QuoteVerified(_account, qid);
     }
 
     //// public
@@ -215,7 +217,7 @@ contract QuoteManager is
         uint256 _amount,
         uint16 _period,
         uint256 _premium,
-        uint256 _qid
+        uint256 qid
     ) internal {
         require(_premium > 0, 'QuoteManager: Error in premium');
         require(_period > 0, 'QuoteManager: Error in period');
@@ -223,7 +225,7 @@ contract QuoteManager is
         uint256 _expiry = _currentDate + validDuration;
         uint256 _endDate = _currentDate + getPeriodDuration(_period);
         // check current cover details
-        quotes[msg.sender][_qid] = Quote(
+        quotes[msg.sender][qid] = Quote(
             CoverDetails(_amount, _period, _endDate, _premium),
             _expiry,
             false
@@ -232,7 +234,7 @@ contract QuoteManager is
 
     function calculatePremium(uint256 _amount, uint16 _period)
         internal
-        pure
+        view
         returns (uint256, uint256)
     {
         // option A - make internal with params address, amount, period
@@ -240,8 +242,8 @@ contract QuoteManager is
         require(_period > 0, 'QuoteManager: minimum period is 1day');
         require(_period < 366, 'QuoteManager: maximum period is 365days');
         //  rate: 250 / 10000 = 2.5% , share from year: period / 365
-        uint256 _qid = 123; // should be the id of quote received back
-        return (_qid, ((_amount * 250 * _period) / 3650000));
+        uint256 qid = currentQuote();
+        return (qid, ((_amount * 250 * _period) / 3650000));
     }
 
     function _authorizeUpgrade(address) internal override onlyOwner {}
@@ -348,5 +350,15 @@ contract QuoteManager is
             }
         }
         return checkpoints[account][lower].amount;
+    }
+
+    function currentQuote() public view returns (uint256) {
+        return _qid;
+    }
+
+    function incrementQuote() internal {
+        unchecked {
+            _qid += 1;
+        }
     }
 }

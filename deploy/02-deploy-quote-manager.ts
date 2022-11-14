@@ -15,6 +15,7 @@ const deployQuoteManager = async (hre: HardhatRuntimeEnvironment) => {
     let insurancepool;
     let validDuration = initials.validDuration;
     let periods = initials.periods;
+    let quoteInit = 0;
     if (
         network.name !== undefined &&
         developmentChains.includes(network.name)
@@ -28,7 +29,7 @@ const deployQuoteManager = async (hre: HardhatRuntimeEnvironment) => {
         }
     }
 
-    const args = [periods, validDuration, insurancepool];
+    const args = [periods, validDuration, insurancepool,quoteInit];
     // TODO: I'm not doing verification for now
     const c = await deployProxy(
         await getContractFactory(DEPLOY_CONTRACT, deployer),
