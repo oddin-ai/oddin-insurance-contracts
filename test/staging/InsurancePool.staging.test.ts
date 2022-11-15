@@ -9,7 +9,9 @@ import constants from '../../helpers/constants';
 import { Decimals18 } from '../../helpers/functions';
 import {} from '../../deploy/00-deploy-mocks';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { developmentChains } from '../../helper-hardhat-config';
 
+developmentChains.includes(network.name)? describe.skip :
 describe('Insurance Pool Staging Test', function () {
     // set-up
     let deployer: string;
@@ -25,7 +27,7 @@ describe('Insurance Pool Staging Test', function () {
     let Mock_InsurancePool: InsurancePool;
     let Mock_QuoteManager: QuoteManager;
     before(async () => {
-        await network.provider.send('hardhat_reset');
+    //    await network.provider.send('hardhat_reset');
         const namedAccounts = await getNamedAccounts();
         externalDeployer_Singer = await ethers.getSigner(
             namedAccounts.externalDeployer
@@ -38,9 +40,8 @@ describe('Insurance Pool Staging Test', function () {
         user_a = user_a_Singer.address;
         user_b = user_b_Singer.address;
         minter = minter_Singer.address;
-        await deployments.fixture(['all']);
+     //   await deployments.fixture(['all']);
     });
-
     describe('Deposit Function', function () {
         before(async () => {
             await deployments.fixture(['all']);

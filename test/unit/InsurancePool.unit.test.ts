@@ -19,7 +19,9 @@ import initials from '../../helpers/deploy-initials';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { MockContract, FakeContract, smock } from '@defi-wonderland/smock';
 import { BigNumberish, Contract } from 'ethers';
+import { developmentChains } from '../../helper-hardhat-config';
 
+!developmentChains.includes(network.name)? describe.skip :
 describe('Insurance Pool Unit Test', function () {
     // set-up
     let deployer: string;
@@ -40,7 +42,7 @@ describe('Insurance Pool Unit Test', function () {
     const balances: { [key: string]: BigNumberish } = {};
 
     before(async () => {
-        await network.provider.send('hardhat_reset');
+       // await network.provider.send('hardhat_reset');
         const namedAccounts = await getNamedAccounts();
         externalDeployer_Singer = await ethers.getSigner(
             namedAccounts.externalDeployer

@@ -13,20 +13,20 @@ const deployInsurancePool = async (hre: HardhatRuntimeEnvironment) => {
     const chainId = network.config.chainId;
     const DEPLOY_CONTRACT = 'InsurancePool';
 
-    let fusd;
+    let nativeStableToken;
     if (
         network.name !== undefined &&
         developmentChains.includes(network.name)
     ) {
-        fusd = (await deployments.get('FiatTokenV1')).address;
+        nativeStableToken = (await deployments.get('FiatTokenV1')).address;
     } else {
         if (chainId) {
-            fusd = null; // this is for now, need to see how to do on-chain testing
+            nativeStableToken = networkConfig[chainId].nativeStable;
         }
     }
 
     // function initialize(uint256 _minFund, address _nativeStable)
-    const args = [Decimals18(constants._1k), fusd];
+    const args = [Decimals18(constants._1k), nativeStableToken];
 
     // TODO: I'm not doing verification for now
     const c = await deployProxy(

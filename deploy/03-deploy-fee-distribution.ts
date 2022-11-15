@@ -5,14 +5,16 @@ import { QuoteManager } from '../typechain-types';
 // import { verify } from '../utils/verify';
 
 const deployFeeDistribution = async (hre: HardhatRuntimeEnvironment) => {
-    const { getNamedAccounts, deployments } = hre;
-    const { deploy, log } = deployments;
-    const { deployer } = await getNamedAccounts();
+    const { getNamedAccounts, deployments, upgrades, ethers } = hre;
+    const { deployProxy } = upgrades;
+    const { getContractFactory, getContract } = ethers;
+    const { deployer, externalDeployer } = await getNamedAccounts();
     const chainId = network.config.chainId;
+    const DEPLOY_CONTRACT = 'FeeDistribution';
 
     let fusdd;
-    let iPool;
-    let cManager;
+    let insurancepool;
+    let quoteManager;
     const speed = ethers.utils.parseUnits('16000', 'gwei');
     if (
         network.name !== undefined &&
@@ -20,29 +22,35 @@ const deployFeeDistribution = async (hre: HardhatRuntimeEnvironment) => {
     ) {
         const stableCoin = await deployments.get('FiatTokenV1');
         fusdd = stableCoin.address;
-        const pool = await deployments.get('InsurancePool');
-        iPool = pool.address;
-        const manager = await deployments.get('QuoteManager');
-        cManager = manager.address;
+        insurancepool = (await deployments.get('InsurancePool')).address;
+        quoteManager = (await deployments.get('QuoteManager')).address;
     } else {
-        if (chainId) {
-            fusdd = null; // this is for now, need to see how to do on-chain testing
-            iPool = null;
+        if (chainId === 122) {
+            fusdd = networkConfig[chainId].nativeStable; 
+            insurancepool = (await getContract('InsurancePool', deployer)).address;
+            quoteManager = (await getContract('QuoteManager',deployer)).address;
         }
     }
-
-    const args = [fusdd, iPool, cManager, speed];
+''
+    const args = [fusdd, insurancepool, quoteManager, speed];
     // TODO: I'm not doing verification for now
-    const c = await deploy('FeeDistribution', {
-        from: deployer,
-        args: args,
-        log: true,
-        waitConfirmations:
-            chainId && networkConfig[chainId]
-                ? networkConfig[chainId].blockConfirmations
-                : 1,
+    const c = await deployProxy(
+        await getContractFactory(DEPLOY_CONTRACT, deployer),
+        args,
+        {
+            kind: 'uups',
+            initializer: 'initialize',
+        }
+    );
+    await c.deployed();
+    const artifact = await deployments.getExtendedArtifact(DEPLOY_CONTRACT); // artifacts.readArtifactSync('FiatTokenV1'),
+
+    deployments.save(DEPLOY_CONTRACT, {
+        ...artifact,
+        address: c.address,
     });
 };
 
 deployFeeDistribution.tags = ['all', 'fee', 'dist'];
 export default deployFeeDistribution;
+

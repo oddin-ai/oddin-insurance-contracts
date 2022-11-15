@@ -1,23 +1,41 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol';
 
 import './interfaces/IInsurancePool.sol';
 import './interfaces/IQuoteManager.sol';
+import './interfaces/IFeeDistribution.sol';
 
 import 'hardhat/console.sol';
 
-contract FeeDistribution is Ownable, ReentrancyGuard {
-    // Type declarations:
-    using SafeERC20 for IERC20;
+error NotPartOfThePool(uint256 partOfPool);
+error InsufficientBalance(uint256 balance);
+error CoverNotActive();
+error CoverFeeAmountNotSufficiant();
 
-    IERC20 public immutable feesToken;
-    IInsurancePool public immutable pool;
-    IQuoteManager public immutable quoteManager;
+contract FeeDistribution is
+    IFeeDistribution,
+    Initializable,
+    OwnableUpgradeable,
+    AccessControlUpgradeable,
+    ReentrancyGuardUpgradeable,
+    PausableUpgradeable,
+    UUPSUpgradeable
+{
+    // Type declarations:
+    using SafeERC20Upgradeable for IERC20Upgradeable;
+
+    IERC20Upgradeable public feesToken;
+    IInsurancePool public INSURANCE_POOL;
+    IQuoteManager public quoteManager;
 
     uint256 public tokenPerSecRate;
     uint256 private constant ACC_TOKEN_PRECISION = 1e18;
@@ -30,10 +48,6 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
     // User address => shareInPool to be claimed // development
     mapping(address => uint256) public shareInPool; // development
 
-    struct FeeInfo {
-        uint256 accTokenPerShare;
-        uint256 lastFeeDistributionTimestamp;
-    }
     /// @notice Info of the poolInfo.
     FeeInfo public sFeeInfo;
 
@@ -42,14 +56,20 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
 
     // need to check how much of the fees that are stored in this contract we need to distribute!!!
 
-    constructor(
+    function initialize(
         address _feesToken,
-        address _pool,
+        address _insurancePool,
         address _quoteManagerAddress,
         uint256 _tokenPerSecRate
-    ) {
-        feesToken = IERC20(_feesToken);
-        pool = IInsurancePool(_pool);
+    ) public initializer {
+        __Ownable_init();
+        __ReentrancyGuard_init();
+        __Pausable_init();
+        __UUPSUpgradeable_init();
+        __AccessControl_init();
+        _grantRole(DEFAULT_ADMIN_ROLE, owner());
+        feesToken = IERC20Upgradeable(_feesToken);
+        INSURANCE_POOL = IInsurancePool(_insurancePool);
         quoteManager = IQuoteManager(_quoteManagerAddress);
         tokenPerSecRate = _tokenPerSecRate;
         sFeeInfo = FeeInfo({
@@ -96,13 +116,16 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
 
     function claim() external nonReentrant {
         // here we need to check the user share in the pool
-        (uint256 uShareInPool, uint256 poolTotal) = pool.ShareInPool(
+        (uint256 uShareInPool, uint256 poolTotal) = INSURANCE_POOL.ShareInPool(
             msg.sender
         );
         console.log('user share in pool: %s', uShareInPool);
         console.log('Total in pool: %s', poolTotal);
 
-        require(uShareInPool > 0, 'Claim: user has no share in pool');
+        //require(uShareInPool > 0, 'Claim: user has no share in pool');
+        if (uShareInPool <= 0) {
+            revert NotPartOfThePool(uShareInPool);
+        }
         uint256 coverPremium = feesToken.balanceOf(address(this));
         FeeInfo memory feesInfo = updateFeesInfo();
 
@@ -114,39 +137,42 @@ contract FeeDistribution is Ownable, ReentrancyGuard {
         //fees[msg.sender] += feeReward;                // and keep track of not over paying
         uint256 userAmount = feeReward - uRewardDept;
         console.log('fee to claim is: %s', userAmount);
-        require(coverPremium >= userAmount, 'Account: Insufficient balance');
+        // require(coverPremium >= userAmount, 'Account: Insufficient balance');
+        if (coverPremium < userAmount) {
+            revert InsufficientBalance(userAmount);
+        }
         feesToken.safeTransfer(msg.sender, userAmount);
     }
 
-    function VerifyCover(uint256 _qid, uint256 _premiumAmount)
+    function VerifyCover(uint256 qid, uint256 _premiumAmount)
         external
         payable
         nonReentrant
     {
-        console.log('before checking active quote with %s', _qid);
-        try quoteManager.IsQuoteActive(msg.sender, _qid) returns (
+        try quoteManager.IsQuoteActive(msg.sender, qid) returns (
             bool active,
             CoverDetails memory cd
         ) {
             // TODO: also require the quate to be not verified!!!
-            require(active, 'VerifyCover: Quate is not active!');
+            if (!active) {
+                revert CoverNotActive();
+            }
             uint256 _premium = cd.premium;
-            require(
-                _premiumAmount >= _premium,
-                'VerifyCover: Fee amount not sufficiant!'
-            );
-            console.log('premium to pay: %s', _premium);
+            if (_premiumAmount < _premium) {
+                revert CoverFeeAmountNotSufficiant();
+            }
             feesToken.safeTransferFrom(msg.sender, address(this), _premium);
-            console.log('we passed safeTransferFrom with %s', _qid);
-            quoteManager.Verify(msg.sender, _qid);
-            pool.updateActiveCoverage(true, _premium);
+            quoteManager.Verify(msg.sender, qid);
+            INSURANCE_POOL.updateActiveCoverage(true, cd.balance);
             emit CoverVerified(msg.sender);
         } catch Error(string memory err) {
-            console.log('Error catch');
+            console.log('Error catch ${err}', err);
+        } catch (bytes memory _err) {
+            emit BytesFailure(_err);
         }
-        // (bool active, CoverDetails memory cd) = quoteManager.IsQuoteActive(
-        //     msg.sender,
-        //     _qid
-        // );
     }
+
+    event BytesFailure(bytes bytesFailure);
+
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 }

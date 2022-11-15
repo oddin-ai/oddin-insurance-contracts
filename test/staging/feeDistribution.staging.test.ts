@@ -13,9 +13,8 @@ import {
     QuoteManager,
 } from './../../typechain-types';
 
-!developmentChains.includes(network.name)
-    ? describe.skip
-    : describe('FeeDistribution Staging tests', async () => {
+developmentChains.includes(network.name)? describe.skip :
+describe('FeeDistribution Staging tests', async () => {
           let distributer: FeeDistribution;
           let mockFeesToken: FiatTokenV1;
           let insurancePool: InsurancePool;
@@ -25,12 +24,12 @@ import {
           let externalDeployer: string;
 
           before(async () => {
-              await network.provider.send('hardhat_reset');
+          //    await network.provider.send('hardhat_reset');  // should run only on development networks
               const namgedAccounts = await getNamedAccounts();
               deployer = namgedAccounts.deployer;
               externalDeployer = namgedAccounts.externalDeployer;
               minter = namgedAccounts.externalAdmin;
-              await deployments.fixture(['all']);
+              await deployments.fixture(['all']);   // should run only on development networks
               distributer = await ethers.getContract(
                   'FeeDistribution',
                   deployer
@@ -173,7 +172,7 @@ import {
 
           describe('verifyCover', async () => {
               before(async () => {
-                  await deployments.fixture(['all']);
+          //        await deployments.fixture(['all']);
                   await mockFeesToken
                       .connect(await ethers.getSigner(externalDeployer))
                       .configureMinter(minter, Decimals18(constants._1m));
@@ -204,6 +203,7 @@ import {
 
                   const Mock_QuoteManager_USER_A =
                       manager.connect(workingAccount);
+                    await manager.ApproveUser(workingAccount.address);
                   const txResponse = await Mock_QuoteManager_USER_A.GetQuote(
                       Decimals18(constants._2k),
                       0
@@ -219,12 +219,13 @@ import {
                               : 0
                           : 0
                       : 0;
+                    const premiumId = premiumLog ? (premiumLog.length > 0 ? (premiumLog[0].args ? premiumLog[0].args[1] : 0) : 0) : 0
                   await mockFeesToken
                       .connect(workingAccount)
                       .approve(distributer.address, Decimals18(constants._10k));
 
                   await expect(
-                      feesConnectedContract.VerifyCover(123, premiumAmount)
+                      feesConnectedContract.VerifyCover(premiumId, premiumAmount)
                   )
                       .to.emit(feesConnectedContract, 'CoverVerified')
                       .withArgs(workingAccount.address);
